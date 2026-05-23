@@ -1,0 +1,24 @@
+apply plugin: AllRepositoriesFix
+
+class AllRepositoriesFix implements Plugin<Gradle> {
+    void apply(Gradle gradle) {
+        gradle.allprojects { project ->
+            project.repositories {
+                all { repo ->
+                    if (repo instanceof MavenArtifactRepository) {
+                        if (repo.url.toString().contains("dl.google.com") ||
+                            repo.url.toString().contains("google()") ||
+                            repo.url.toString().contains("googlesource.com")) {
+                            repo.setUrl("https://maven.aliyun.com/repository/google/")
+                        }
+                        if (repo.url.toString().contains("mavenCentral()") ||
+                            repo.url.toString().contains("repo1.maven.org") ||
+                            repo.url.toString().contains("central.maven.org")) {
+                            repo.setUrl("https://maven.aliyun.com/repository/public/")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
