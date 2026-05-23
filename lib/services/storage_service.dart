@@ -94,6 +94,13 @@ class StorageService {
     await file.writeAsString(jsonEncode(all.map((e) => e.toJson()).toList()));
   }
 
+  Future<void> removeEpisode(String episodeId) async {
+    final all = await _loadAllEpisodes();
+    all.removeWhere((e) => e.id == episodeId);
+    final file = await _episodesFileHandle;
+    await file.writeAsString(jsonEncode(all.map((e) => e.toJson()).toList()));
+  }
+
   Future<void> updateEpisode(Episode episode) async {
     final all = await _loadAllEpisodes();
     final idx = all.indexWhere((e) => e.id == episode.id);

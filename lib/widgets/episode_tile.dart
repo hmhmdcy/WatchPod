@@ -7,7 +7,9 @@ class EpisodeTile extends StatelessWidget {
   final String? imageUrl;
   final bool isDownloaded;
   final bool isPlaying;
+  final bool? isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const EpisodeTile({
     super.key,
@@ -16,23 +18,44 @@ class EpisodeTile extends StatelessWidget {
     this.imageUrl,
     this.isDownloaded = false,
     this.isPlaying = false,
+    this.isSelected,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
+    final showCheck = isSelected != null;
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: GlassContainer(
         blur: 6,
-        tintColor: isPlaying
-            ? const Color(0xFF6C63FF).withValues(alpha: 0.12)
-            : Colors.white.withValues(alpha: 0.04),
+        tintColor: isSelected == true
+            ? const Color(0xFF6C63FF).withValues(alpha: 0.15)
+            : isPlaying
+                ? const Color(0xFF6C63FF).withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.04),
         borderRadius: 12,
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         padding: const EdgeInsets.all(8),
         child: Row(
           children: [
+            // 选中指示器（多选模式）
+            if (showCheck) ...[
+              Container(
+                width: 18, height: 18,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected == true ? const Color(0xFF6C63FF) : Colors.white.withValues(alpha: 0.1),
+                  border: Border.all(color: isSelected == true ? const Color(0xFF6C63FF) : Colors.white24),
+                ),
+                child: isSelected == true
+                    ? const Icon(Icons.check, size: 12, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(width: 8),
+            ],
             // 每集封面
             GlassImage(
               imageUrl: imageUrl,
@@ -52,11 +75,8 @@ class EpisodeTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight:
-                          isPlaying ? FontWeight.bold : FontWeight.normal,
-                      color: isPlaying
-                          ? const Color(0xFF6C63FF)
-                          : Colors.white,
+                      fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
+                      color: isPlaying ? const Color(0xFF6C63FF) : Colors.white,
                     ),
                   ),
                   if (duration != null || isDownloaded)
@@ -66,8 +86,7 @@ class EpisodeTile extends StatelessWidget {
                         children: [
                           if (duration != null)
                             Text(duration!,
-                                style: TextStyle(
-                                    fontSize: 10, color: Colors.grey[400])),
+                                style: TextStyle(fontSize: 10, color: Colors.grey[400])),
                           if (isDownloaded)
                             Padding(
                               padding: const EdgeInsets.only(left: 6),
@@ -92,9 +111,7 @@ class EpisodeTile extends StatelessWidget {
               child: Icon(
                 isPlaying ? Icons.play_arrow : Icons.play_circle_outline,
                 size: 18,
-                color: isPlaying
-                    ? const Color(0xFF6C63FF)
-                    : Colors.grey,
+                color: isPlaying ? const Color(0xFF6C63FF) : Colors.grey,
               ),
             ),
           ],

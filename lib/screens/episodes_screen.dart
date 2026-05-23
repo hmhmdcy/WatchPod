@@ -32,8 +32,11 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   List<Episode> _episodes = [];
   bool _loading = true;
   String? _error;
-  // 保存播客的最新封面
   String? _latestImageUrl;
+
+  // 多选模式状态
+  bool _selectionMode = false;
+  final Set<Episode> _selectedEpisodes = {};
 
   @override
   void initState() {
@@ -44,7 +47,6 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   Future<void> _loadEpisodes() async {
     try {
       setState(() => _loading = true);
-      // Try cached first, then refresh from network
       final cached = await widget.storageService.loadEpisodes(widget.podcast.id);
       if (cached.isNotEmpty) {
         _episodes = cached;
@@ -54,16 +56,8 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
             ?.imageUrl;
         setState(() => _loading = false);
       }
-      // Refresh from network — 自动获取最新封面
       final result = await widget.rssService.parseFeed(widget.podcast.feedUrl);
-      await widget.storageService.saveEpisodes(
-          widget.podcast.id, result.episodes);
-
-      // 更新播客的最新封面
-      if (result.podcast.imageUrl != null &&
-          result.podcast.imageUrl != widget.podcast.imageUrl) {
-        // 封面更新了！下次进入首页时生效
-      }
+      await widget.storageService.saveEpisodes(widget.podcast.id, result.episodes);
 
       setState(() {
         _episodes = result.episodes;
@@ -87,46 +81,90 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              PlayerScreen(audioService: widget.audioService),
+          builder: (_) => PlayerScreen(audioService: widget.audioService),
         ),
       );
     }
   }
 
-  void _downloadEpisode(Episode episode) async {
-    if (episode.audioUrl == null || episode.isDownloaded) return;
-    try {
-      final dir = await widget.storageService.downloadDir;
-      final fileName =
-          '${episode.id}.${episode.audioUrl!.split('.').last}';
-      final path = '$dir/$fileName';
+  void _toggleSelection(Episode episode) {
+    setState(() {
+      if (_selectedEpisodes.contains(episode)) {
+        _selectedEpisodes.remove(episode);
+        if (_selectedEpisodes.isEmpty) _selectionMode = false;
+      } else {
+        _selectedEpisodes.add(episode);
+        _selectionMode = true;
+      }
+    });
+  }
 
-      final dio = Dio();
-      await dio.download(episode.audioUrl!, path);
+  void _exitSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedEpisodes.clear();
+    });
+  }
 
-      final updated = episode.copyWith(
-        isDownloaded: true,
-        localPath: path,
-      );
-      await widget.storageService.updateEpisode(updated);
-
+  Future<void> _batchDelete() async {
+    final count = _selectedEpisodes.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('删除节目', style: TextStyle(fontSize: 14, color: Colors.white)),
+        content: Text('确定删除已选的 $count 个节目？',
+            style: TextStyle(fontSize: 12, color: Colors.grey[300])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消', style: TextStyle(fontSize: 12))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('删除', style: TextStyle(fontSize: 12, color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      for (final ep in _selectedEpisodes) {
+        await widget.storageService.removeEpisode(ep.id);
+      }
       setState(() {
-        final idx = _episodes.indexWhere((e) => e.id == episode.id);
-        if (idx >= 0) _episodes[idx] = updated;
+        _episodes.removeWhere((e) => _selectedEpisodes.contains(e));
+        _exitSelectionMode();
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已删除 $count 个节目'), duration: const Duration(seconds: 1)),
+        );
+      }
+    }
+  }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✓ 下载完成'), duration: Duration(seconds: 1)),
-        );
+  Future<void> _batchDownload() async {
+    int success = 0;
+    for (final ep in _selectedEpisodes) {
+      if (ep.audioUrl != null && !ep.isDownloaded) {
+        try {
+          final dir = await widget.storageService.downloadDir;
+          final fileName = '${ep.id}.${ep.audioUrl!.split('.').last}';
+          final path = '$dir/$fileName';
+          final dio = Dio();
+          await dio.download(ep.audioUrl!, path);
+          final updated = ep.copyWith(isDownloaded: true, localPath: path);
+          await widget.storageService.updateEpisode(updated);
+          setState(() {
+            final idx = _episodes.indexWhere((e) => e.id == ep.id);
+            if (idx >= 0) _episodes[idx] = updated;
+          });
+          success++;
+        } catch (_) {}
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('下载失败: $e'), duration: const Duration(seconds: 2)),
-        );
-      }
+    }
+    _exitSelectionMode();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('✓ 已下载 $success 个节目'), duration: const Duration(seconds: 1)),
+      );
     }
   }
 
@@ -137,30 +175,94 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(widget.podcast.title,
+        title: Text(_selectionMode
+            ? '已选 ${_selectedEpisodes.length} 个'
+            : widget.podcast.title,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: _selectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: _exitSelectionMode,
+              )
+            : IconButton(
+                icon: const Icon(Icons.arrow_back, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
         actions: [
-          // 刷新按钮
-          IconButton(
-            icon: const Icon(Icons.refresh, size: 18),
-            onPressed: _loading ? null : _loadEpisodes,
-          ),
+          if (!_selectionMode)
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 18),
+              onPressed: _loading ? null : _loadEpisodes,
+            ),
         ],
       ),
       body: GlassBackground(
-        child: WatchSafeArea(
-          child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.white))
-              : _error != null
-                  ? _buildError()
-                  : _episodes.isEmpty
-                      ? _buildEmpty()
-                      : _buildEpisodeList(),
+        child: Column(
+          children: [
+            Expanded(
+              child: WatchSafeArea(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    : _error != null
+                        ? _buildError()
+                        : _episodes.isEmpty
+                            ? _buildEmpty()
+                            : _buildEpisodeList(),
+              ),
+            ),
+            // 底部操作栏（多选模式下显示）
+            if (_selectionMode)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.95),
+                  border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _batchDownload,
+                        child: GlassContainer(
+                          blur: 6,
+                          tintColor: const Color(0xFF6C63FF).withValues(alpha: 0.2),
+                          borderRadius: 10,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.download, size: 16, color: Color(0xFF6C63FF)),
+                              SizedBox(width: 6),
+                              Text('下载', style: TextStyle(fontSize: 12, color: Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _batchDelete,
+                        child: GlassContainer(
+                          blur: 6,
+                          tintColor: Colors.red.withValues(alpha: 0.15),
+                          borderRadius: 10,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                              SizedBox(width: 6),
+                              Text('删除', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -172,9 +274,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GlassContainer(
-            blur: 6,
-            tintColor: Colors.red.withValues(alpha: 0.1),
-            borderRadius: 20,
+            blur: 6, tintColor: Colors.red.withValues(alpha: 0.1), borderRadius: 20,
             padding: const EdgeInsets.all(12),
             child: const Icon(Icons.error_outline, size: 28, color: Colors.red),
           ),
@@ -184,9 +284,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
           GestureDetector(
             onTap: _loadEpisodes,
             child: GlassContainer(
-              blur: 6,
-              tintColor: Colors.white.withValues(alpha: 0.08),
-              borderRadius: 20,
+              blur: 6, tintColor: Colors.white.withValues(alpha: 0.08), borderRadius: 20,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: const Text('重试', style: TextStyle(fontSize: 12)),
             ),
@@ -198,8 +296,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
 
   Widget _buildEmpty() {
     return Center(
-      child: Text('暂无节目',
-          style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+      child: Text('暂无节目', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
     );
   }
 
@@ -210,24 +307,22 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
       itemBuilder: (context, index) {
         final ep = _episodes[index];
         final isPlaying = widget.audioService.currentEpisode?.id == ep.id;
-        return Dismissible(
-          key: Key(ep.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            color: const Color(0xFF6C63FF),
-            child: const Icon(Icons.download, color: Colors.white, size: 24),
-          ),
-          onDismissed: (_) => _downloadEpisode(ep),
-          child: EpisodeTile(
-            title: ep.title,
-            duration: ep.formattedDuration,
-            imageUrl: ep.imageUrl ?? _latestImageUrl,
-            isDownloaded: ep.isDownloaded,
-            isPlaying: isPlaying,
-            onTap: () => _playEpisode(ep),
-          ),
+        final isSelected = _selectedEpisodes.contains(ep);
+        return EpisodeTile(
+          title: ep.title,
+          duration: ep.formattedDuration,
+          imageUrl: ep.imageUrl ?? _latestImageUrl,
+          isDownloaded: ep.isDownloaded,
+          isPlaying: isPlaying,
+          isSelected: _selectionMode ? isSelected : null,
+          onTap: _selectionMode
+              ? () => _toggleSelection(ep)
+              : () => _playEpisode(ep),
+          onLongPress: _selectionMode
+              ? null
+              : () {
+                  _toggleSelection(ep);
+                },
         );
       },
     );
