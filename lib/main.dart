@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'services/audio_service.dart';
 import 'services/storage_service.dart';
 import 'services/rss_service.dart';
@@ -68,7 +69,7 @@ class WatchPodApp extends StatelessWidget {
           trackHeight: 3,
         ),
       ),
-      home: kIsWeb
+      home: (kIsWeb || Platform.isLinux)
           ? _WebDebugShell(
               audioService: audioService,
               storageService: storageService,
@@ -84,7 +85,8 @@ class WatchPodApp extends StatelessWidget {
 }
 
 /// Web 调试外壳：底部导航切换四个页面，方便视觉检查
-class _WebDebugShell extends StatefulWidget {
+/// Linux Desktop 调试外壳：固定 466×466 圆形窗口模拟 Huawei Watch 3
+class _WebDebugShell extends StatelessWidget {
   final AudioService audioService;
   final StorageService storageService;
   final RssService rssService;
@@ -95,11 +97,53 @@ class _WebDebugShell extends StatefulWidget {
     required this.rssService,
   });
 
+  static const double watchSize = 466;
+
   @override
-  State<_WebDebugShell> createState() => _WebDebugShellState();
+  Widget build(BuildContext context) {
+    final clipRadius = watchSize / 2;
+
+    return Scaffold(
+      body: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(clipRadius),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              size: const Size(watchSize, watchSize),
+            ),
+            child: SizedBox(
+              width: watchSize,
+              height: watchSize,
+              child: _LinuxDebugPages(
+                audioService: audioService,
+                storageService: storageService,
+                rssService: rssService,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _WebDebugShellState extends State<_WebDebugShell> {
+/// Linux Desktop 四页导航：Home / Episodes / Player / Settings
+class _LinuxDebugPages extends StatefulWidget {
+  final AudioService audioService;
+  final StorageService storageService;
+  final RssService rssService;
+
+  const _LinuxDebugPages({
+    required this.audioService,
+    required this.storageService,
+    required this.rssService,
+  });
+
+  @override
+  State<_LinuxDebugPages> createState() => _LinuxDebugPagesState();
+}
+
+class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
   int _currentPage = 0;
 
   static final _mockPodcast = PodcastSubscription(
@@ -113,45 +157,23 @@ class _WebDebugShellState extends State<_WebDebugShell> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    // 圆形裁剪尺寸 — 取最短边
-    final watchSize = min(screenSize.width, screenSize.height);
-    final clipRadius = watchSize / 2;
-
-    return Scaffold(
-      body: Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(clipRadius),
-          child: MediaQuery(
-            // 覆盖 MediaQuery.size，让 HomeScreen 内读取到正确的圆形尺寸
-            data: MediaQuery.of(context).copyWith(
-              size: Size(watchSize, watchSize),
-            ),
-            child: SizedBox(
-              width: watchSize,
-              height: watchSize,
-              child: IndexedStack(
-                index: _currentPage,
-                children: [
-                  HomeScreen(
-                    audioService: widget.audioService,
-                    storageService: widget.storageService,
-                    rssService: widget.rssService,
-                  ),
-                  EpisodesScreen(
-                    podcast: _mockPodcast,
-                    audioService: widget.audioService,
-                    storageService: widget.storageService,
-                    rssService: widget.rssService,
-                  ),
-                  PlayerScreen(audioService: widget.audioService),
-                  SettingsScreen(storageService: widget.storageService),
-                ],
-              ),
-            ),
-          ),
+    return IndexedStack(
+      index: _currentPage,
+      children: [
+        HomeScreen(
+          audioService: widget.audioService,
+          storageService: widget.storageService,
+          rssService: widget.rssService,
         ),
-      ),
+        EpisodesScreen(
+          podcast: _mockPodcast,
+          audioService: widget.audioService,
+          storageService: widget.storageService,
+          rssService: widget.rssService,
+        ),
+        PlayerScreen(audioService: widget.audioService),
+        SettingsScreen(storageService: widget.storageService),
+      ],
     );
   }
 }

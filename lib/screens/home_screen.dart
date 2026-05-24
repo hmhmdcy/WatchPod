@@ -176,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         )
-                      : Positioned.fill(
+                      : SizedBox.expand(
                           child: WatchSafeArea(
                             child: _buildPodcastSection(ws),
                           ),

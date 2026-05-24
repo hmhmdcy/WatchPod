@@ -176,8 +176,11 @@ class _TagTrackState extends State<TagTrack> {
             ),
           ),
           // 手势检测：拖拽弧线标签切换 + 点击提交
+          // 使用 translucent 确保 40dp 窄条也能响应触摸
+          // behavior: HitTestBehavior.translucent 让空白区域也能接收事件
           Positioned.fill(
             child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
               onVerticalDragStart: (details) {
                 setState(() => _isDragging = true);
                 _updateFromY(details.localPosition.dy, screenSize.height);
