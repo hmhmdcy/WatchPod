@@ -18,6 +18,7 @@ WHEN task involves:
 - **version tracking** → read CHANGELOG.md, update it after changes
 - **environment config / install** → log to ~/.hermes/deployment-log/
 - **screen adapt / layout fix** → see WearScale in lib/widgets/wear_scale.dart
+- **TagTrack arc slider touch issues** → read docs/KNOWN_BUGS.md (#1)
 
 ## KEY CROSS-REFERENCES
 
