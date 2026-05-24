@@ -221,8 +221,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
@@ -317,8 +320,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: PopScope(
         canPop: true,
         child: GlassBackground(
-          child: SafeArea(
-            child: Column(
+          child: Column(
               children: [
                 // ── 热门播客列表（剩余空间）──
                 Expanded(
@@ -336,7 +338,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-          ),
         ),
       ),
     );
