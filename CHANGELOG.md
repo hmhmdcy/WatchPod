@@ -1,5 +1,24 @@
 # WatchPod Changelog
 
+## v1.8.1 — 2026-05-25
+
+### Added
+- `ArcLinePainter` (`lib/widgets/arc_line_painter.dart`) — CustomPaint arc drawn with circle equation on full screen, hugging right circular edge exactly from top-right (-90°) to bottom-right (90°). Uses global screen coordinates via `Positioned.fill(left: -N)` extension.
+- `OverflowBox` full-screen arc painting — `CustomPaint` now uses `OverflowBox` to paint outside TagTrack's 40dp container, ensuring canvas origin (0,0) = screen (0,0) for consistent rendering across Web, emulator, and real device.
+- Frosted glass arc effect — `MaskFilter.blur` blur layer under the semi-transparent white stroke for a frosted glass appearance.
+- Web debug: `MediaQuery` override in `_WebDebugShell` — wraps child screens with `MediaQuery(data: copyWith(size: Size(watchSize, watchSize)))` so child widgets read the correct circular mask size instead of full browser dimensions.
+
+### Changed
+- **HomeScreen layout: Row → Stack for centered content** — Content (WatchSafeArea) now uses `Positioned.fill` in a Stack instead of `Expanded` in a Row. This ensures the podcast cover is truly centered on round screens, unaffected by the 24dp right-side TagTrack zone.
+- **TagTrack arc coordinates: global → OverflowBox** — Arc is drawn using the raw circle equation `(centerX + R*cos(θ), centerY + R*sin(θ))` on a full-screen Canvas. No more offset-based coordinate translation. This eliminates the earlier bug where `MediaQuery` returned browser size (1280px) on Web, causing arc to render at wrong coordinates.
+- **Arc length: full right semicircle → half length (-45° to 45°)** — Reduced from -90°~90° (full right semicircle) to -45°~45° per user feedback.
+- **Arc inset: 2dp → 0dp** — Arc now sits directly on the circular edge with no inset, matching user's "紧贴圆边" requirement.
+- **Arc stroke: 10dp, semi-transparent white + blur** — Frosted glass look with `MaskFilter.blur(BlurStyle.normal, 10)`.
+
+### Fixed
+- **Arc invisible on Web** — Root cause: `MediaQuery.of(context).size` returned full browser width (1280px) when Flutter was rendered inside a 577px circular ClipRRect mask. The circle equation computed arc points far from the visible mask area. Fixed by overriding `MediaQuery` in `_WebDebugShell` and using `OverflowBox` for the CustomPaint canvas.
+- **Cover off-center** — Root cause: `Row(children: [Expanded(...), SizedBox(width:24, TagTrack)])` offset the geometric center by 12dp. Fixed by using `Stack(children: [Positioned.fill(WatchSafeArea), Positioned(right:0, TagTrack)])`.
+
 ## v1.8.0 — 2026-05-24
 
 ### Changed

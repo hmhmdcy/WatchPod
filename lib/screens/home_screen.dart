@@ -227,18 +227,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     )
-                  : Row(
+                  : Stack(
                       children: [
-                        // ── 内容主体 ──
-                        Expanded(
+                        // 圆形裁剪覆盖全屏，确保内容居中
+                        Positioned.fill(
                           child: WatchSafeArea(
                             child: _buildPodcastSection(ws),
                           ),
                         ),
-
-                        // ── 右侧弧线滑条（紧贴圆边，无面板）──
-                        SizedBox(
-                          width: ws.s(24),
+                        // 右侧弧线滑条（紧贴圆边，无面板）
+                        Positioned.fill(
                           child: _buildTopBar(ws),
                         ),
                       ],

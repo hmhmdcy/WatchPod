@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'services/audio_service.dart';
@@ -112,49 +113,41 @@ class _WebDebugShellState extends State<_WebDebugShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentPage,
-        children: [
-          HomeScreen(
-            audioService: widget.audioService,
-            storageService: widget.storageService,
-            rssService: widget.rssService,
-          ),
-          EpisodesScreen(
-            podcast: _mockPodcast,
-            audioService: widget.audioService,
-            storageService: widget.storageService,
-            rssService: widget.rssService,
-          ),
-          PlayerScreen(audioService: widget.audioService),
-          SettingsScreen(storageService: widget.storageService),
-        ],
-      ),
-    );
-  }
+    final screenSize = MediaQuery.of(context).size;
+    // 圆形裁剪尺寸 — 取最短边
+    final watchSize = min(screenSize.width, screenSize.height);
+    final clipRadius = watchSize / 2;
 
-  Widget _navBtn(int index, String label) {
-    final active = _currentPage == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _currentPage = index),
-        child: Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: active ? const Color(0xFF6C63FF) : Colors.transparent,
-                width: 2,
-              ),
+    return Scaffold(
+      body: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(clipRadius),
+          child: MediaQuery(
+            // 覆盖 MediaQuery.size，让 HomeScreen 内读取到正确的圆形尺寸
+            data: MediaQuery.of(context).copyWith(
+              size: Size(watchSize, watchSize),
             ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: active ? const Color(0xFF6C63FF) : Colors.white54,
-              fontWeight: active ? FontWeight.bold : FontWeight.normal,
+            child: SizedBox(
+              width: watchSize,
+              height: watchSize,
+              child: IndexedStack(
+                index: _currentPage,
+                children: [
+                  HomeScreen(
+                    audioService: widget.audioService,
+                    storageService: widget.storageService,
+                    rssService: widget.rssService,
+                  ),
+                  EpisodesScreen(
+                    podcast: _mockPodcast,
+                    audioService: widget.audioService,
+                    storageService: widget.storageService,
+                    rssService: widget.rssService,
+                  ),
+                  PlayerScreen(audioService: widget.audioService),
+                  SettingsScreen(storageService: widget.storageService),
+                ],
+              ),
             ),
           ),
         ),

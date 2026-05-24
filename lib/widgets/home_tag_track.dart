@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'wear_scale.dart';
 
-/// 右侧紧贴弧形表盘的毛玻璃滑条
+/// 右侧紧贴圆形表盘的弧线滑条
 ///
-/// 设计目标：
-/// - 视觉上只露出一条极细的弧线（3dp 宽），紧贴圆形屏幕右边缘内侧
-/// - 手指触摸/拖拽时显示滑块圆点 + 标签浮层
-/// - 滑到底部停 2 秒触发添加订阅
+/// 架构：
+/// - 容器 SizedBox(40, screenHeight)，用 ClipRect 限制触摸区域
+/// - 弧线用 Stack + OverflowBox 扩展到全屏绘制，避免坐标转换问题
+/// - 手势在 SizedBox 内检测，弧线在全屏坐标下绘制
 class TagTrack extends StatefulWidget {
   final List<String> tags;
   final String? activeTag;
@@ -28,25 +28,35 @@ class TagTrack extends StatefulWidget {
 }
 
 class _TagTrackState extends State<TagTrack> {
-  // 滑条状态
   double _dragY = 0;
   bool _isDragging = false;
   String? _hoverLabel;
   bool _showAddHint = false;
   Timer? _bottomTimer;
 
-  // 标签列表（始终包含 "全部"）
   late List<String> _allLabels;
-  // 弧线参数（按屏幕尺寸计算）
+
+  // 弧线参数（全局屏幕坐标）
   double _arcTop = 0;
   double _arcBottom = 0;
-  double _arcCenterX = 0; // 弧线的 x 坐标（屏幕坐标）
-  double _trackInset = 0; // 弧线离屏幕右边缘的距离
+  Offset _circleCenter = Offset.zero;
+  double _arcRadius = 0;
+  double _startAngleRad = -45 * pi / 180;
+  double _endAngleRad = 45 * pi / 180;
+  Size _screenSize = Size.zero;
 
   @override
   void initState() {
     super.initState();
     _allLabels = ['全部', ...widget.tags];
+  }
+
+  @override
+  void didUpdateWidget(TagTrack oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tags != widget.tags) {
+      _allLabels = ['全部', ...widget.tags];
+    }
   }
 
   @override
@@ -58,9 +68,7 @@ class _TagTrackState extends State<TagTrack> {
   void _startBottomTimer() {
     _bottomTimer?.cancel();
     _bottomTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        widget.onAddSubscription();
-      }
+      if (mounted) widget.onAddSubscription();
     });
   }
 
@@ -69,16 +77,18 @@ class _TagTrackState extends State<TagTrack> {
     _bottomTimer = null;
   }
 
-  /// 根据 y 坐标（弧线轨迹上的位置）计算当前标签 / 是否在底部区域
   void _updateFromY(double rawY, double height) {
-    // 将 y 映射到弧线轨迹上
+    if (_arcRadius <= 0) return;
     final clampedY = rawY.clamp(_arcTop, _arcBottom);
-    final arcLen = _arcBottom - _arcTop;
-    final ratio = arcLen > 0 ? (clampedY - _arcTop) / arcLen : 0.0;
-    // 顶部≈0 → "全部"，底部≈1 → 最末标签
+    final dy = clampedY - _circleCenter.dy;
+    final clampedDy = dy.clamp(-_arcRadius, _arcRadius);
+    final theta = asin(clampedDy / _arcRadius);
+    final totalArcRad = _endAngleRad - _startAngleRad;
+    if (totalArcRad <= 0) return;
+    final ratio = (theta - _startAngleRad) / totalArcRad;
+
     final index = (ratio * (_allLabels.length - 1)).round().clamp(0, _allLabels.length - 1);
     final isBottom = ratio >= 0.85;
-
     final label = _allLabels[index];
 
     setState(() {
@@ -99,8 +109,7 @@ class _TagTrackState extends State<TagTrack> {
       _cancelBottomTimer();
       widget.onAddSubscription();
     } else if (_hoverLabel != null) {
-      final newTag = _hoverLabel == '全部' ? null : _hoverLabel;
-      widget.onTagChanged(newTag);
+      widget.onTagChanged(_hoverLabel == '全部' ? null : _hoverLabel);
     }
     setState(() {
       _isDragging = false;
@@ -108,34 +117,24 @@ class _TagTrackState extends State<TagTrack> {
     });
   }
 
-  /// 根据屏幕尺寸计算弧线参数
   void _calcArcParameters(Size screenSize) {
     final h = screenSize.height;
     final w = screenSize.width;
-    // 圆的半径取宽高中的较小者
     final r = min(w, h) / 2;
-    // 弧线位置：从右上约 30° 到右下约 30°
-    // 最右边缘是 (w, h/2)
-    // 我们想让弧线在圆内边缘，距离右侧边约 4dp
-    _trackInset = 4;
-    final arcCenterX = w - _trackInset;
-    // 圆的圆心坐标（假设屏幕是圆形的 WatchSafeArea）
-    final circleCenter = Offset(w / 2, h / 2);
-    final circleR = r;
+    final center = Offset(w / 2, h / 2);
 
-    // 弧线在右边缘，以圆心到 arcCenterX 的距离作为弦的参考
-    // 弧线贴圆：arcCenterX 与圆心的水平距离
-    final dxFromCenter = arcCenterX - circleCenter.dx;
-    if (dxFromCenter < circleR) {
-      // 弧线顶部 y：当 x=arcCenterX 时，圆上的 y 值
-      final halfChord = sqrt(max(0.0, circleR * circleR - dxFromCenter * dxFromCenter));
-      _arcTop = circleCenter.dy - halfChord + 8;  // 留 8dp 边距
-      _arcBottom = circleCenter.dy + halfChord - 8;
-    } else {
-      _arcTop = h * 0.1;
-      _arcBottom = h * 0.9;
-    }
-    _arcCenterX = arcCenterX;
+    const startDeg = -45.0;
+    const endDeg = 45.0;
+    final startRad = startDeg * pi / 180;
+    final endRad = endDeg * pi / 180;
+
+    _arcTop = center.dy + r * sin(startRad);
+    _arcBottom = center.dy + r * sin(endRad);
+    _circleCenter = center;
+    _arcRadius = r;
+    _startAngleRad = startRad;
+    _endAngleRad = endRad;
+    _screenSize = screenSize;
   }
 
   @override
@@ -143,64 +142,65 @@ class _TagTrackState extends State<TagTrack> {
     final ws = WearScale.of(context);
     final screenSize = MediaQuery.of(context).size;
 
-    // 计算弧线参数
     _calcArcParameters(screenSize);
 
-    return GestureDetector(
-      onPanStart: (details) {
-        // 检查触摸位置是否接近弧线（扩大命中区域到 20dp）
-        final dx = (details.localPosition.dx - (_arcCenterX));
-        if (dx.abs() > 20) return; // 太远不响应
-        setState(() => _isDragging = true);
-        _updateFromY(details.localPosition.dy, screenSize.height);
-      },
-      onPanUpdate: (details) {
-        _updateFromY(details.localPosition.dy, screenSize.height);
-      },
-      onPanEnd: (_) => _commitLabel(),
-      onPanCancel: () {
-        _cancelBottomTimer();
-        setState(() => _isDragging = false);
-      },
-      child: SizedBox(
-        width: 40, // 触摸区域宽度
-        height: screenSize.height,
-        child: RepaintBoundary(
-          child: CustomPaint(
-            size: Size(40, screenSize.height),
-            painter: _TagTrackPainter(
-              dragY: _isDragging ? _dragY : null,
-              arcTop: _arcTop,
-              arcBottom: _arcBottom,
-              arcCenterX: _arcCenterX,
-              dragX: _isDragging ? _arcCenterX : null,
-              isDragging: _isDragging,
-              showAddHint: _showAddHint,
-              trackInset: _trackInset,
-              ws: ws,
+    return SizedBox(
+      width: 40,
+      height: screenSize.height,
+      child: Stack(
+        children: [
+          // 弧线绘制：用 OverflowBox 溢出到全屏
+          // OverflowBox 不改变子元素的 parent constraints，
+          // 而是直接覆盖子元素自身的尺寸，让 CustomPaint 在全屏坐标下绘制
+          Positioned.fill(
+            child: OverflowBox(
+              minWidth: screenSize.width,
+              maxWidth: screenSize.width,
+              minHeight: screenSize.height,
+              maxHeight: screenSize.height,
+              alignment: Alignment.topLeft,
+              child: CustomPaint(
+                size: screenSize,
+                painter: _TagTrackArcPainter(
+                  startAngleRad: _startAngleRad,
+                  endAngleRad: _endAngleRad,
+                  arcTop: _arcTop,
+                  arcBottom: _arcBottom,
+                  arcRadius: _arcRadius,
+                  arcCenterX: _circleCenter.dx,
+                  arcCenterY: _circleCenter.dy,
+                  strokeWidth: 10,
+                  strokeColor: const Color(0xB0FFFFFF),
+                  isDragging: _isDragging,
+                  dragY: _isDragging ? _dragY : null,
+                  showAddHint: _showAddHint,
+                  ws: ws,
+                ),
+              ),
             ),
+          ),
+          // 手势检测 + 标签浮层
+          Positioned.fill(
             child: _isDragging
                 ? Stack(
                     children: [
-                      // 标签浮层
                       if (_hoverLabel != null && !_showAddHint)
                         Positioned(
                           top: _dragY - ws.s(12),
-                          left: 0,
+                          left: -ws.s(60),
                           child: _buildLabelBubble(_hoverLabel!, ws),
                         ),
-                      // "添加订阅" 提示
                       if (_showAddHint)
                         Positioned(
                           top: _dragY - ws.s(30),
-                          left: 0,
+                          left: -ws.s(70),
                           child: _buildAddBubble(ws),
                         ),
                     ],
                   )
                 : const SizedBox.shrink(),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -212,14 +212,11 @@ class _TagTrackState extends State<TagTrack> {
         color: const Color(0xFF6C63FF).withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(ws.s(10)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: ws.sp(12),
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: ws.sp(12),
+              color: Colors.white,
+              fontWeight: FontWeight.bold)),
     );
   }
 
@@ -247,102 +244,113 @@ class _TagTrackState extends State<TagTrack> {
   }
 }
 
-/// 滑条绘制器
-class _TagTrackPainter extends CustomPainter {
-  final double? dragY;
-  final double? dragX;
+/// 弧线绘制器
+///
+/// CustomPaint 在全屏尺寸下绘制，canvas 原点 (0,0) = 屏幕 (0,0)
+/// 弧线用圆方程直接在屏幕全局坐标中计算，紧贴圆形周长
+class _TagTrackArcPainter extends CustomPainter {
+  final double startAngleRad;
+  final double endAngleRad;
   final double arcTop;
   final double arcBottom;
+  final double arcRadius;
   final double arcCenterX;
+  final double arcCenterY;
+  final double strokeWidth;
+  final Color strokeColor;
   final bool isDragging;
+  final double? dragY;
   final bool showAddHint;
-  final double trackInset;
   final WearScale ws;
 
-  _TagTrackPainter({
-    required this.dragY,
-    required this.dragX,
+  _TagTrackArcPainter({
+    required this.startAngleRad,
+    required this.endAngleRad,
     required this.arcTop,
     required this.arcBottom,
+    required this.arcRadius,
     required this.arcCenterX,
+    required this.arcCenterY,
+    required this.strokeWidth,
+    required this.strokeColor,
     required this.isDragging,
+    required this.dragY,
     required this.showAddHint,
-    required this.trackInset,
     required this.ws,
   });
 
+  Offset _pointOnCircle(double angleRad) {
+    return Offset(
+      arcCenterX + arcRadius * cos(angleRad),
+      arcCenterY + arcRadius * sin(angleRad),
+    );
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
+    final totalAngle = endAngleRad - startAngleRad;
 
-    // ── 弧线轨道：紧贴圆右边缘的一条细弧线 ──
-    final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.45)
+    // 毛玻璃效果：底层模糊
+    final blurPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = strokeWidth + 4
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+
+    // 上层半透明白色
+    final trackPaint = Paint()
+      ..color = strokeColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
-    // 弧线从 arcTop 到 arcBottom，在 arcCenterX 位置
-    final arcH = arcBottom - arcTop - 8; // 向内缩4dp，上下各留4dp避免贴边被吞
-    if (arcH > 0) {
-      const steps = 24;
-      for (int i = 0; i <= steps; i++) {
-        final t = i / steps;
-        final y = arcTop + 4 + arcH * t; // 整体下移4dp补偿顶部收缩
-        // 弧线略微凸出 — 中间更靠左（贴合圆）
-        final bulge = sin(t * pi) * 6; // 最大凸出 6dp
-        final x = w - bulge - 3; // 再向左缩3dp，避免贴边被裁切
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
+    const steps = 48;
+
+    for (int i = 0; i <= steps; i++) {
+      final t = i / steps;
+      final angle = startAngleRad + totalAngle * t;
+      final pt = _pointOnCircle(angle);
+      if (i == 0) {
+        path.moveTo(pt.dx, pt.dy);
+      } else {
+        path.lineTo(pt.dx, pt.dy);
       }
-    } else {
-      // fallback：直线
-      path.moveTo(w * 0.5, arcTop);
-      path.lineTo(w * 0.5, arcBottom);
     }
+
+    // 先画模糊底层（毛玻璃光晕）
+    canvas.drawPath(path, blurPaint);
+    // 再画清晰上层
     canvas.drawPath(path, trackPaint);
 
     // ── 滑块圆点 ──
     if (dragY != null && isDragging) {
       final dotRadius = ws.s(6);
       final showAdd = showAddHint;
-
       final dotPaint = Paint()
         ..color = showAdd ? const Color(0xFF6C63FF) : Colors.white
         ..style = PaintingStyle.fill;
 
-      // 滑块 x 位置：弧线位置
-      final t = (dragY! - arcTop) / max(1.0, arcBottom - arcTop);
-      final bulge = sin(t.clamp(0, 1.0) * pi) * 6;
-      final dotX = w - bulge;
+      final ratio = (dragY! - arcTop) / max(1.0, arcBottom - arcTop);
+      final angle = startAngleRad + totalAngle * ratio.clamp(0.0, 1.0);
+      final dotPt = _pointOnCircle(angle);
 
-      canvas.drawCircle(
-        Offset(dotX, dragY!),
-        dotRadius,
-        dotPaint,
-      );
+      canvas.drawCircle(Offset(dotPt.dx, dotPt.dy), dotRadius, dotPaint);
 
       if (showAdd) {
         final glowPaint = Paint()
           ..color = const Color(0xFF6C63FF).withValues(alpha: 0.3)
           ..style = PaintingStyle.fill;
         canvas.drawCircle(
-          Offset(dotX, dragY!),
-          dotRadius * 2.5,
-          glowPaint,
-        );
+          Offset(dotPt.dx, dotPt.dy), dotRadius * 2.5, glowPaint);
       }
     }
   }
 
   @override
-  bool shouldRepaint(_TagTrackPainter oldDelegate) {
-    return oldDelegate.dragY != dragY ||
-        oldDelegate.isDragging != isDragging ||
-        oldDelegate.showAddHint != showAddHint;
-  }
+  bool shouldRepaint(_TagTrackArcPainter oldDelegate) =>
+      oldDelegate.dragY != dragY ||
+      oldDelegate.isDragging != isDragging ||
+      oldDelegate.showAddHint != showAddHint;
 }
