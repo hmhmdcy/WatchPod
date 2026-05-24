@@ -221,103 +221,105 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 返回按钮
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                height: ws.s(36),
+                width: ws.s(36),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Center(
+                  child: Icon(Icons.arrow_back,
+                      color: Colors.white70, size: ws.s(18)),
+                ),
+              ),
+            ),
+            SizedBox(width: ws.s(6)),
+            // 刷新按钮
+            GestureDetector(
+              onTap: _loadingTop
+                  ? null
+                  : () async {
+                      await _topService.invalidateCache();
+                      _loadTopPodcasts();
+                    },
+              child: Container(
+                height: ws.s(36),
+                width: ws.s(36),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Center(
+                  child: _loadingTop
+                      ? SizedBox(
+                          width: ws.s(14),
+                          height: ws.s(14),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white54),
+                        )
+                      : Icon(Icons.refresh,
+                          color: Colors.white70, size: ws.s(18)),
+                ),
+              ),
+            ),
+            SizedBox(width: ws.s(6)),
+            // 添加订阅按钮（+）
+            GestureDetector(
+              onTap: _adding ? null : _showAddFeedDialog,
+              child: Container(
+                height: ws.s(36),
+                width: ws.s(36),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    width: 0.5,
+                  ),
+                ),
+                child: Center(
+                  child: _adding
+                      ? SizedBox(
+                          width: ws.s(14),
+                          height: ws.s(14),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white),
+                        )
+                      : Icon(Icons.add,
+                          color: Colors.white, size: ws.s(20)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       body: PopScope(
         canPop: true,
         child: GlassBackground(
           child: SafeArea(
             child: Column(
               children: [
-                // ── 顶部居中操作栏 ──
-                SizedBox(
-                  height: ws.s(48),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // 返回按钮
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: ws.s(36),
-                          width: ws.s(36),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(borderRadius),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(Icons.arrow_back,
-                                color: Colors.white70, size: ws.s(18)),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: ws.s(6)),
-                      // 刷新按钮
-                      GestureDetector(
-                        onTap: _loadingTop
-                            ? null
-                            : () async {
-                                await _topService.invalidateCache();
-                                _loadTopPodcasts();
-                              },
-                        child: Container(
-                          height: ws.s(36),
-                          width: ws.s(36),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(borderRadius),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                          child: Center(
-                            child: _loadingTop
-                                ? SizedBox(
-                                    width: ws.s(14),
-                                    height: ws.s(14),
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white54),
-                                  )
-                                : Icon(Icons.refresh,
-                                    color: Colors.white70, size: ws.s(18)),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: ws.s(6)),
-                      // 添加订阅按钮（+）
-                      GestureDetector(
-                        onTap: _adding ? null : _showAddFeedDialog,
-                        child: Container(
-                          height: ws.s(36),
-                          width: ws.s(36),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(borderRadius),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: Center(
-                            child: _adding
-                                ? SizedBox(
-                                    width: ws.s(14),
-                                    height: ws.s(14),
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white),
-                                  )
-                                : Icon(Icons.add,
-                                    color: Colors.white, size: ws.s(20)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 // ── 热门播客列表（剩余空间）──
                 Expanded(
                   child: WatchSafeArea(

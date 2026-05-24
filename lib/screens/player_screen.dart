@@ -32,17 +32,18 @@ class PlayerScreen extends StatelessWidget {
         title: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            height: ws.s(36),
+            padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(ws.s(16)),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.arrow_back, size: 16, color: Colors.white70),
-                SizedBox(width: 6),
-                Text('返回', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                Icon(Icons.arrow_back, size: ws.s(16), color: Colors.white70),
+                SizedBox(width: ws.s(6)),
+                Text('返回', style: TextStyle(fontSize: ws.sp(12), color: Colors.white70)),
               ],
             ),
           ),
