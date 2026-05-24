@@ -43,7 +43,6 @@ class _TagTrackState extends State<TagTrack> {
   double _arcRadius = 0;
   double _startAngleRad = -45 * pi / 180;
   double _endAngleRad = 45 * pi / 180;
-  Size _screenSize = Size.zero;
 
   @override
   void initState() {
@@ -134,7 +133,6 @@ class _TagTrackState extends State<TagTrack> {
     _arcRadius = r;
     _startAngleRad = startRad;
     _endAngleRad = endRad;
-    _screenSize = screenSize;
   }
 
   @override
@@ -150,8 +148,6 @@ class _TagTrackState extends State<TagTrack> {
       child: Stack(
         children: [
           // 弧线绘制：用 OverflowBox 溢出到全屏
-          // OverflowBox 不改变子元素的 parent constraints，
-          // 而是直接覆盖子元素自身的尺寸，让 CustomPaint 在全屏坐标下绘制
           Positioned.fill(
             child: OverflowBox(
               minWidth: screenSize.width,
@@ -179,7 +175,25 @@ class _TagTrackState extends State<TagTrack> {
               ),
             ),
           ),
-          // 手势检测 + 标签浮层
+          // 手势检测：拖拽弧线标签切换 + 点击提交
+          Positioned.fill(
+            child: GestureDetector(
+              onVerticalDragStart: (details) {
+                setState(() => _isDragging = true);
+                _updateFromY(details.localPosition.dy, screenSize.height);
+              },
+              onVerticalDragUpdate: (details) {
+                _updateFromY(details.localPosition.dy, screenSize.height);
+              },
+              onVerticalDragEnd: (_) => _commitLabel(),
+              onTapUp: (details) {
+                _updateFromY(details.localPosition.dy, screenSize.height);
+                _commitLabel();
+              },
+              child: const SizedBox.expand(),
+            ),
+          ),
+          // 标签浮层
           Positioned.fill(
             child: _isDragging
                 ? Stack(

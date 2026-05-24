@@ -46,7 +46,9 @@ Since v1.8.1, TWO layout patterns are used depending on screen:
 | **HomeScreen** | Stack + right arc track overlay | Full-width content (centered) + TagTrack overlay |
 | **All others** | AppBar centered buttons + full content | Scaffold(extendBodyBehindAppBar) + WatchSafeArea(body) |
 
-## HomeScreen Layout (v1.8.1+)
+## HomeScreen Layout (v1.8.2+)
+
+**IMPORTANT (v1.8.2 fix):** TagTrack must be **outside** `SafeArea`. See ARCHITECTURE.md for rationale.
 
 ```
   ┌──────────────────────┐
@@ -60,18 +62,50 @@ Since v1.8.1, TWO layout patterns are used depending on screen:
   └──────────────────────┘
 ```
 
-### Architecture Detail
+### Architecture Detail (v1.8.2+)
+
+```dart
+// HomeScreen.build() — v1.8.2
+return Scaffold(
+  extendBodyBehindAppBar: true,
+  body: GlassBackground(
+    child: Stack(
+      children: [
+        // Content inside SafeArea
+        SafeArea(
+          child: _subscriptions.isEmpty
+              ? _emptyState(ws)
+              : Positioned.fill(
+                  child: WatchSafeArea(
+                    child: _buildPodcastSection(ws),
+                  ),
+                ),
+        ),
+        // TagTrack OUTSIDE SafeArea — gesture region reaches screen edge
+        if (_subscriptions.isNotEmpty)
+          Positioned.fill(
+            child: _buildTopBar(ws),  // → TagTrack
+          ),
+      ],
+    ),
+  ),
+);
+```
+
+**Why SafeArea separation:** On round screens (Huawei Watch 3), `SafeArea` adds padding on all four edges. If TagTrack is inside SafeArea, its 40dp touch zone shifts inward and becomes unreachable on the right edge.
+
+### Architecture Detail (v1.8.1, superseded)
 
 ```dart
 Stack(
   children: [
     Positioned.fill(
       child: WatchSafeArea(
-        child: _buildPodcastSection(ws),  // centered content
+        child: _buildPodcastSection(ws),
       ),
     ),
     Positioned.fill(
-      child: _buildTopBar(ws),  // → TagTrack overlay
+      child: _buildTopBar(ws),
     ),
   ],
 )
@@ -89,7 +123,7 @@ Stack(
 
 ## TagTrack — Right Edge Frosted-Glass Arc Track
 
-### Architecture
+### Architecture (v1.8.2+)
 
 ```
 SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
@@ -101,6 +135,13 @@ SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
        │              - canvas origin (0,0) = screen (0,0)
        │              - arc: x=CX+R*cos(θ), y=CY+R*sin(θ)  (-45° to 45°)
        │              - 10dp semi-transparent white + MaskFilter blur
+       ├─ Positioned.fill
+       │   └─ GestureDetector              ← v1.8.2 fix
+       │       └─ SizedBox.expand()
+       │          onVerticalDragStart → _isDragging = true
+       │          onVerticalDragUpdate → _updateFromY(→ hover label)
+       │          onVerticalDragEnd → _commitLabel()
+       │          onTapUp → _commitLabel()
        └─ Positioned.fill (label overlays when dragging)
 ```
 
@@ -112,7 +153,7 @@ SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
 | `arcRadius = r` (no inset) | User explicitly wanted arc "紧贴圆边" (tight against the circular bezel) |
 | -45° to 45° | Arc covers ~1/4 circle (right side, about half screen height). User said previous full right semicircle was "太长了" |
 | `MaskFilter.blur(BlurStyle.normal, 10)` | Creates frosted glass glow under the semi-transparent white stroke. First layer: 14dp blur + 0.15 opacity. Top layer: 10dp + 0.69 opacity. |
-| `GestureDetector` in SizedBox(40dp) | Touch zone restricted to right edge so swiping left side won't trigger tag changes |
+| `GestureDetector` in SizedBox(40dp) | Touch zone restricted to right edge so swiping left side won't trigger tag changes. **v1.8.2 fix:** Previously missing entirely (arc was drawn but no gesture handler). Added as a full `SizedBox.expand()` layer between arc painting and label overlay. |
 
 ### Interaction Model
 

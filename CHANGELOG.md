@@ -1,5 +1,24 @@
 # WatchPod Changelog
 
+## v1.8.2 — 2026-05-25
+
+### Fixed
+- **TagTrack arc slider completely non-interactive** — Root cause: `TagTrack.build()` had no `GestureDetector` at all. The arc was drawn but no touch/gesture handlers were registered, so vertical drag, tap, and long-press all had zero effect. Fixed by adding a `GestureDetector` layer (`onVerticalDragStart`/`onVerticalDragUpdate`/`onVerticalDragEnd`/`onTapUp`) between the arc CustomPaint and the label overlay, using `SizedBox.expand()` as the gesture target.
+
+- **HomeScreen: TagTrack touch area clipped by SafeArea on round screens** — Root cause: TagTrack was placed inside `SafeArea`, which on a round screen (Huawei Watch 3) adds padding to all four edges. This shifted the 40dp touch zone away from the screen right edge, making the arc unreachable. Fixed by restructuring `HomeScreen.build()` layout from `SafeArea → Stack [content, TagTrack]` to `Stack [SafeArea → content, TagTrack (outside SafeArea)]`, ensuring TagTrack's gesture region reaches the screen edge.
+
+- **Cover tap unresponsive on round screens** — TagTrack's `Positioned.fill` was in the same `SafeArea`-wrapped `Stack` as the content, causing layout inconsistencies. The SafeArea separation fix also resolved this: content inside `WatchSafeArea` is no longer overlapped by SafeArea padding on the circular display.
+
+### Changed
+- **HomeScreen layout: SafeArea scope restricted** — `SafeArea` now only wraps the content area (`_buildPodcastSection`), not the TagTrack. The outer layer becomes `GlassBackground → Stack [SafeArea → content, TagTrack]`.
+
+### Cleanup
+- Removed unused `_ArcShape` clipper (legacy from right-panel era)
+- Removed unused `_allTagItems` getter
+- Removed unused `_openPlayer` method
+- Removed unused `_selectTag` method (had logic bug, was never called)
+- Removed unused `_screenSize` field from `_TagTrackState`
+
 ## v1.8.1 — 2026-05-25
 
 ### Added

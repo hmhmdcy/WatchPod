@@ -89,26 +89,39 @@ No deep linking, no named routes. Manual DI.
 
 ## Layout Architecture
 
-### HomeScreen — Stack + Right Arc Track (v1.8.1+)
+### HomeScreen — Stack + Right Arc Track (v1.8.2+)
+
+**IMPORTANT (v1.8.2 fix):** TagTrack must be **outside** `SafeArea` on round screens. `SafeArea` on Huawei Watch 3 adds padding that clips the 40dp touch zone away from the screen edge, making the arc unreachable.
 
 ```dart
-Stack(
-  children: [
-    // Full-screen centered content
-    Positioned.fill(
-      child: WatchSafeArea(
-        child: _buildPodcastSection(ws),  // cover / PageView
-      ),
+// HomeScreen.build() — v1.8.2 layout
+return Scaffold(
+  extendBodyBehindAppBar: true,
+  body: GlassBackground(
+    child: Stack(
+      children: [
+        // Content: SafeArea protects from bezel clipping
+        SafeArea(
+          child: _subscriptions.isEmpty
+              ? _emptyState(ws)
+              : Positioned.fill(
+                  child: WatchSafeArea(
+                    child: _buildPodcastSection(ws),
+                  ),
+                ),
+        ),
+        // TagTrack OUTSIDE SafeArea — gesture region reaches screen edge
+        if (_subscriptions.isNotEmpty)
+          Positioned.fill(
+            child: _buildTopBar(ws),  // → TagTrack
+          ),
+      ],
     ),
-    // Right edge arc track (overlays on top)
-    Positioned.fill(                // ← full width for OverflowBox alignment
-      child: _buildTopBar(ws),      // → TagTrack
-    ),
-  ],
-)
+  ),
+);
 ```
 
-### TagTrack — Frosted-Glass Arc Track
+### TagTrack — Frosted-Glass Arc Track (v1.8.2+)
 
 - **Container:** `SizedBox(width:40, height:screenHeight)` — limits touch zone to right edge
 - **Arc painting:** `OverflowBox(minWidth:screenWidth)` extends `CustomPaint` to full screen
@@ -120,6 +133,7 @@ Stack(
 - **Tags:** ["全部"(null), ...widget.tags] — drag Y maps to tag via `asin((Y-centerY)/R)`
 - **Bottom zone:** 85%+ of arc → 2s hold triggers "添加订阅"
 - **Architecture (CRITICAL):** TagTrack's CustomPaint uses `OverflowBox` so the arc is drawn at true screen-global coordinates. This ensures **identical rendering on Web, emulator, and real hardware** — no coordinate translation bugs.
+- **Gesture layer (v1.8.2 fix):** A `GestureDetector` with `SizedBox.expand()` is placed between the arc CustomPaint and the label overlay. Handlers: `onVerticalDragStart` → enables drag mode, `onVerticalDragUpdate` → maps Y to tag label, `onVerticalDragEnd` → commits selection, `onTapUp` → single-tap commit. The GestureDetector is at the third child position in the inner Stack (after arc OverFlowBox and before label overlay), ensuring it catches all gestures before they reach the label layer.
 
 ### Web Debug — MediaQuery Override
 
