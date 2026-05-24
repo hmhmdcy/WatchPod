@@ -1,60 +1,53 @@
 # WatchPod Build Guide
 
-> For AI consumption. Run from `~/watchpod/`. Environment: `source ~/.bashrc_flutter` first.
+> For AI consumption.
 
-## Build Environment
+## Environment
 
-| Tool | Version |
-|------|---------|
-| Flutter | 3.44.0 stable |
-| Dart | 3.12.0 |
-| JDK | OpenJDK 17.0.18 |
-| Android SDK | API 35 + 36 |
-| Gradle | 9.1.0 |
-| NDK | 28.2.13676358 |
+| Variable | Value |
+|----------|-------|
+| Flutter | 3.44 (in ~/flutter) |
+| Dart | 3.12 |
+| Android SDK | ~/Android/Sdk (API 35 + 36) |
+| Java | OpenJDK 17 (in PATH) |
+| Proxy | mihomo @ 127.0.0.1:7890 (Clash API @ :9090) |
+| WSL RAM | 4.8GB (AVD + Gradle need care) |
 
-## Commands
-
+### PATH Setup
 ```bash
-# Build all arch (52MB)
-flutter build apk --release
-
-# Split by arch (16-20MB each — RECOMMENDED)
-flutter build apk --release --split-per-abi
-# → build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-
-# Pre-build check (RSS URLs + flutter analyze + tests)
-bash tools/pre_build_check.sh
+source /home/user/.bashrc_flutter
+export GRADLE_OPTS="-Xmx512m"    # prevent OOM on 4GB WSL
 ```
 
-## Constraints
+## Build Commands
 
-- **RAM: 4GB total** → Gradle Xmx=2G (set in android/gradle.properties). Xmx > 2G causes OOM.
-- **Proxy: Clash (mihomo) @ :7890** — systemd user service, auto-restart on crash (~3s). Required for Flutter/Gradle downloads behind GFW.
-- **NO_PROXY**: `storage.googleapis.com,download.flutter.io` → direct, never through proxy (causes SSL errors).
-
-## Proxy Failure Diagnosis
-
-**Symptom**: `SSLHandshakeException: Remote host terminated the handshake` during build
-**Root cause 90%**: Clash died (OOM killed Gateway → kills Clash → all network fails)
-**Check**: `systemctl --user is-active mihomo`
-**Don't**: Tweak Gradle TLS config. **Do**: Restart proxy, retry.
-
-## Build Flow (Complete)
-
+### Release APK (for Huawei Watch 3 / real devices)
 ```bash
-source ~/.bashrc_flutter
-systemctl --user is-active mihomo || systemctl --user start mihomo
-cd ~/watchpod && bash tools/pre_build_check.sh
+source /home/user/.bashrc_flutter
+flutter build apk --release --split-per-abi
+# armeabi-v7a → build/.../app-armeabi-v7a-release.apk (16MB)
+# arm64-v8a  → build/.../app-arm64-v8a-release.apk  (19MB)
+```
+
+### Debug APK (for x86_64 emulator)
+```bash
+flutter build apk --debug --target-platform android-x64
+# → build/.../app-x86_64-debug.apk
+```
+
+### Clean build (after OOM / daemon lock)
+```bash
+flutter clean
+kill $(ps aux | grep '[g]radle' | awk '{print $2}') 2>/dev/null
+rm -rf ~/.gradle/daemon/
 flutter pub get
-flutter build apk --release --split-per-abi
-ls -lh build/app/outputs/flutter-apk/
 ```
 
-## Config Files
+## Key Constraints
 
-| File | Purpose |
-|------|---------|
-| `~/.bashrc_flutter` | Flutter PATH + Android SDK + proxy env vars |
-| `android/gradle.properties` | JVM args: Xmx2G, TLS protocols |
-| `~/.config/clash/config.yaml` | Proxy rules (DIRECT for googleapis.com) |
+- Always source `~/.bashrc_flutter` before any flutter command.
+- GRADLE_OPTS must be -Xmx512m — default 2GB causes OOM + systemd cascade.
+- mihomo proxy must be running before pub get or Gradle dependency resolution.
+- After interrupting a build, kill stale Gradle daemons — they keep locks.
+- **Do NOT build without user approval** — wait for explicit confirmation.
+- Build approval is also required before pushing to GitHub.

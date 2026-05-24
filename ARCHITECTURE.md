@@ -1,103 +1,116 @@
 # WatchPod Architecture Reference
 
-> For AI consumption. Last updated: 2026-05-24.
-> Primary context file: AGENTS.md (load first). Compliments: UI_COMPONENTS.md, docs/BUILD.md.
+> For AI consumption.
 
-## Data Flow — Complete Call Chains
+## Device Specs
 
-### Subscription Add
+### Huawei Watch 3 (primary target)
 
-```
-SettingsScreen._addFeed(url)
-  → RssService.parseFeed(url)  [Dio GET → XmlDocument.parse]
-    → returns (PodcastSubscription, List<Episode>)
-  → [Tag picker dialog: auto-suggest + manual select]
-  → StorageService.addSubscription(podcast)  [append to JSON, write all]
-  → StorageService.saveEpisodes(podcastId, episodes)
-  → Navigator.pop() → HomeScreen._loadSubscriptions()
-```
+| Parameter | Value |
+|-----------|-------|
+| Screen | 1.43" AMOLED round |
+| Resolution | 466 × 466 px |
+| DPI | 320 |
+| Usable dp | ~370 dp (466 / (320/160) ≈ 233pt × 2 = 370dp) |
+| Architecture | ARMv7 (32-bit) |
 
-### Episode Play
+### WearScale Design Baseline
 
-```
-EpisodeTile.onTap → EpisodesScreen._playEpisode(ep)
-  → AudioService.play(ep)
-    ├─ source = isDownloaded ? AudioSource.file(localPath) : AudioSource.uri(audioUrl)
-    ├─ if playbackPosition > 5s: setAudioSource(..., initialPosition: playbackPosition)
-    └─ _player.play()
-  → Navigator.push(PlayerScreen)
-```
+- **Design base:** 280 dp (not the standard 360 dp)
+- **Rationale:** Huawei Watch 3's actual usable dp is ~370 dp. With base=280, ratio = 370/280 ≈ 1.32×, ensuring all UI elements (buttons 36dp → 47dp, icons 18sp → 24sp) are large enough for finger touch on a round screen.
+- **This is Option 2 (lower base value)** from the Hermes skill: change one constant, all `ws.s()`, `ws.sp()`, `ws.fs()` scale proportionally.
 
-### Episode Refresh (Cache-First)
+### Scaling Reference (at 370 dp / 320 DPI)
 
-```
-EpisodesScreen.initState → _loadEpisodes()
-  ├─ Load cached: StorageService.loadEpisodes(podcastId) → setState (instant)
-  ├─ Network refresh: RssService.parseFeed(feedUrl) → setState (async)
-  │   └─ On error: keep showing cached data (no error, unless cache empty)
-  └─ StorageService.saveEpisodes(podcastId, episodes)
-```
+| Design value | Actual size | Use case |
+|-------------|-------------|----------|
+| 36 dp | ~47 dp | Top bar buttons (height) |
+| 18 sp | ~24 sp | Button icons |
+| 13 sp | ~17 sp | Tag chip / body text |
+| 15 sp | ~20 sp | List item title |
+| 11 sp | ~14.5 sp | Caption / meta text |
 
-### Download
+## File Structure (18 files, ~3600 LOC)
 
 ```
-Dismissible onDismissed → EpisodesScreen._downloadEpisode(ep)
-  ├─ Guard: audioUrl != null && !isDownloaded
-  ├─ Dio.download(audioUrl, "${downloadDir}/${ep.id}.${ext}")
-  ├─ episode.copyWith(isDownloaded: true, localPath: path)
-  └─ StorageService.updateEpisode(updated)
+lib/
+├── main.dart                  # Entry: init 3 services, run WatchPodApp
+├── models/
+│   ├── episode.dart
+│   └── podcast_subscription.dart
+├── screens/
+│   ├── home_screen.dart       # Top-bar layout: tag row + add btn / full-height cover (~280 lines)
+│   ├── episodes_screen.dart   # Episode list: cache-first + silent RSS refresh
+│   ├── player_screen.dart     # Seekable Slider + play/pause + skip15
+│   └── settings_screen.dart   # Top-bar layout: compact add+refresh / full-height hot list (~350 lines)
+├── services/
+│   ├── audio_service.dart
+│   ├── rss_service.dart
+│   ├── storage_service.dart
+│   └── top_podcast_service.dart # iTunes API + 24h cache + TopPodcastItem model
+└── widgets/
+    ├── episode_preview_sheet.dart
+    ├── episode_tile.dart
+    ├── glass_components.dart
+    ├── hot_podcast_list.dart  # List with showTitle prop
+    ├── podcast_tile.dart
+    ├── settings_add_bar.dart  # compact + default modes
+    ├── settings_info_bar.dart # Unused since v1.4.0 (kept for reference)
+    ├── watch_safe_area.dart
+    ├── watch_layout.dart
+    └── wear_scale.dart
 ```
 
-## Storage Performance Constraints
-
-- `episodes.json` is flat array, O(n) append: read all → filter → add → write all.
-- **Migrate at ~5000 episodes or ~10MB**: Hive (~200KB overhead) → Isar (~2MB, relational).
-- **No schema migration**: `fromJson` returns `[]` on any parse failure. Field additions silently drop old data.
-
-## Key Pitfalls for AI
-
-1. **EpisodeTile.imageUrl chain**: `imageUrl` comes from RSS `<itunes:image href="...">` on each `<item>`. Many feeds don't provide per-episode images. Fallback (in EpisodesScreen): `ep.imageUrl ?? latestImageUrl` where `latestImageUrl` is the first non-null imageUrl from the loaded episode list. PodcastTile always uses `podcast.imageUrl`.
-
-2. **Tag suggestion logic** is in `PodcastSubscription.suggestTags(title, description)`. Keyword-based (lowercased regex). Run this on subscription addition before showing the tag picker dialog.
-
-3. **Slider + seek**: `PlayerScreen` uses raw `Slider` inside `ListenableBuilder`. The Slider's `onChanged` callback calls `audioService.seek(dur * v)`. Note: `dur` is `audioService.duration ?? Duration(seconds:1)`. During buffering, `duration` may be `Duration.zero` → divide by zero risk mitigated by `max(dur.inMilliseconds, 1)`.
-
-4. **SettingsScreen RssService instance**: `_addFeed()` creates `final rssService = RssService()` locally, bypassing the injected singleton. Harmless but inconsistent pattern.
-
-5. **GlassBackground requires `extendBodyBehindAppBar: true`** on every Scaffold. Forgetting this will cause app bar to have a solid black background instead of glass effect.
-
-6. **Curious fact**: `cached_network_image` package is declared in pubspec.yaml but not actually imported anywhere (images use bare `Image.network`). This is dead weight — can be removed with no impact.
-
-## Navigation Graph (Current)
+## Navigation Graph
 
 ```
-                              ┌──────────────┐
-                              │  HomeScreen  │
-                              │  (PageView)  │
-                              └──────┬───────┘
-                     ┌───────────────┼───────────────┐
-                     ▼               ▼               ▼
-              ┌──────────┐   ┌──────────────┐   ┌────────────┐
-              │ Settings │   │  Episodes    │   │  Player    │
-              │  Screen  │   │   Screen     │   │  Screen    │
-              └──────────┘   └──────┬───────┘   └────────────┘
-                                    │ (tap episode)
-                                    ▼
-                              ┌────────────┐
-                              │  Player    │
-                              │  Screen    │
-                              └────────────┘
+/ → HomeScreen
+  → SettingsScreen (add + browse hot podcasts)  [PopScope swipe-back]
+    → _TagPickerPage (fullscreen tag selection)
+    → showEpisodePreview (bottom sheet)
+  → EpisodesScreen (tap podcast card)  [PopScope via WatchLayout]
+    → PlayerScreen (play episode)
 ```
 
-## Stateful vs Stateless
+No deep linking, no named routes. Manual DI.
 
-| Widget | Type | Notes |
-|--------|------|-------|
-| HomeScreen | Stateful | setState for subscriptions + tag filter |
-| EpisodesScreen | Stateful | setState for episode list + download state |
-| PlayerScreen | **Stateless** | Uses ListenableBuilder — state lives in AudioService |
-| SettingsScreen | Stateful | setState for form + loading |
-| PodcastTile | Stateless | Pure render |
-| EpisodeTile | Stateless | Pure render |
-| GlassContainer | Stateless | Pure render |
-| AudioService | ChangeNotifier | Position, duration, state streams |
+## State Management
+
+| Screen | Mechanism | Notes |
+|--------|-----------|-------|
+| HomeScreen | setState | Sub list, tag filter, page index |
+| EpisodesScreen | setState | Cache-first on init, silent RSS background refresh |
+| PlayerScreen | ListenableBuilder | AudioService (ChangeNotifier) |
+| SettingsScreen | setState | TopPodcastService auto-caches, no loading on cache hit |
+
+## Top-Bar Layout Architecture (v1.4.0+)
+
+All screens use the same pattern: **top action bar (48dp) + full-height content (Expanded)**.
+
+```
+┌───────────────────────┐
+│  [tags/add/refresh]   │  ← Row / SizedBox(48dp). Outside WatchSafeArea.
+├───────────────────────┤
+│                       │
+│  Content (Expanded)   │  ← HomeScreen: WatchSafeArea wrap. Settings: plain.
+│                       │
+└───────────────────────┘
+```
+
+No bottom bars. No info footers.
+
+## Refresh Button Flow
+
+```
+Tap refresh → TopPodcastService.invalidateCache() → _loadTopPodcasts()
+  → getTopPodcasts(forceRefresh: true) → http to iTunes API
+  → cache updated → UI updates with setState
+```
+
+## Storage Constraints
+
+| File | Format | Notes |
+|------|--------|-------|
+| subscriptions.json | JSON | <50KB |
+| episodes/*.json | JSON | Full read/write per op. Migrate at >5000. |
+| top_podcasts_cache.json | JSON | 24h TTL. Survives app restart. |

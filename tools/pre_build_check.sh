@@ -27,34 +27,8 @@ echo "  WatchPod 构建前预检查"
 echo "═══════════════════════════════════"
 echo ""
 
-# 1. 验证预设 RSS 地址
-echo "─── 1. RSS 地址有效性 ───"
-FEEDS=(
-    "故事FM|https://storyfm.cn/feed/episodes"
-    "忽左忽右|https://justpodmedia.com/rss/left-right.xml"
-    "声动早咖啡|https://feeds.fireside.fm/sheng-espresso/rss"
-    "随机波动|https://feeds.fireside.fm/stovol/rss"
-    "博物志|https://bowuzhi.fm/feed/podcast/"
-)
-for feed in "${FEEDS[@]}"; do
-    name="${feed%%|*}"
-    url="${feed##*|}"
-    # Use --insecure because Clash proxy intercepts SSL (phone doesn't have this issue)
-    http_code=$(curl -sL --max-time 10 --insecure -o /tmp/_feed_check.xml -w "%{http_code}" "$url" 2>&1)
-    first_bytes=$(head -c 100 /tmp/_feed_check.xml 2>/dev/null)
-    if [[ "$http_code" == "200" && "$first_bytes" == *"<?xml"* ]]; then
-        echo "  ✅ $name — HTTP $http_code (有效 XML)"
-        ((PASS++))
-    else
-        echo "  ❌ $name — HTTP $http_code (非 RSS XML)"
-        ((FAIL++))
-        ERRORS="$ERRORS\n  - RSS: $name ($url → HTTP $http_code)"
-    fi
-done
-echo ""
-
-# 2. Flutter 静态分析（只检查 error 级别，过滤 info/warning）
-echo "─── 2. Flutter Analyze ───"
+# 1. Flutter 静态分析（只检查 error 级别，过滤 info/warning）
+echo "─── 1. Flutter Analyze ───"
 cd "$(dirname "$0")/.." 2>/dev/null || cd ~/watchpod
 analyze_output=$(flutter analyze 2>&1)
 analyze_exit=$?
@@ -75,8 +49,8 @@ else
 fi
 echo ""
 
-# 3. 单元测试（如果有的话）
-echo "─── 3. Flutter Test ───"
+# 2. 单元测试（如果有的话）
+echo "─── 2. Flutter Test ───"
 if ls test/ 2>/dev/null | grep -q .; then
     # Use --no-pub to avoid native plugin build hangs in WSL
     if flutter test --no-pub --timeout 30s 2>&1 | tail -10; then

@@ -1,23 +1,27 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'wear_scale.dart';
 
 /// Clips content to a circular shape for round smartwatch screens.
-/// Provides safe padding so content doesn't get cut off at corners.
+/// Adaptive padding via [WearScale]: smaller relative padding on large screens.
 class WatchSafeArea extends StatelessWidget {
   final Widget child;
   final double padding;
 
-  const WatchSafeArea({super.key, required this.child, this.padding = 8.0});
+  const WatchSafeArea({super.key, required this.child, this.padding = 6.0});
 
   @override
   Widget build(BuildContext context) {
+    final ws = WearScale.of(context);
+    final safePadding = ws.s(6.0); // base 6, scales with screen
     return LayoutBuilder(builder: (context, constraints) {
       final radius =
-          min(constraints.maxWidth, constraints.maxHeight) / 2 - padding;
+          min(constraints.maxWidth, constraints.maxHeight) / 2 - safePadding;
       return ClipRRect(
         borderRadius: BorderRadius.circular(constraints.maxWidth / 2),
         child: Padding(
-          padding: EdgeInsets.all(padding + (radius * 0.12)),
+          // 自适应 padding：大屏比例更小，小屏比例更大
+          padding: EdgeInsets.all(safePadding + (radius * 0.10)),
           child: child,
         ),
       );
@@ -42,11 +46,13 @@ class WatchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ws = WearScale.of(context);
+    final btnSize = ws.s(size);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: size,
-        height: size,
+        width: btnSize,
+        height: btnSize,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
           shape: BoxShape.circle,
@@ -54,10 +60,12 @@ class WatchButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: size * 0.45),
+            Icon(icon, color: Colors.white, size: btnSize * 0.45),
             if (label != null)
-              Text(label!,
-                  style: TextStyle(fontSize: 10, color: Colors.white70)),
+              Text(
+                label!,
+                style: TextStyle(fontSize: ws.sp(10), color: Colors.white70),
+              ),
           ],
         ),
       ),

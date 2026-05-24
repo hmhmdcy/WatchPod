@@ -8,10 +8,12 @@ class StorageService {
   static const _subscriptionsFile = 'subscriptions.json';
   static const _episodesFile = 'episodes.json';
 
-  Future<String> get _localPath async {
+  Future<String> get localPath async {
     final dir = await getApplicationDocumentsDirectory();
     return dir.path;
   }
+
+  Future<String> get _localPath async => localPath;
 
   Future<File> get _subscriptionsFileHandle async {
     final path = await _localPath;

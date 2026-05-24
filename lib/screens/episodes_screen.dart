@@ -8,6 +8,7 @@ import '../services/rss_service.dart';
 import '../widgets/episode_tile.dart';
 import '../widgets/glass_components.dart';
 import '../widgets/watch_safe_area.dart';
+import '../widgets/wear_scale.dart';
 import 'player_screen.dart';
 
 class EpisodesScreen extends StatefulWidget {
@@ -170,44 +171,60 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ws = WearScale.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(_selectionMode
-            ? '已选 ${_selectedEpisodes.length} 个'
-            : widget.podcast.title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        leading: _selectionMode
-            ? IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                onPressed: _exitSelectionMode,
-              )
-            : IconButton(
-                icon: const Icon(Icons.arrow_back, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-        actions: [
-          if (!_selectionMode)
-            IconButton(
-              icon: const Icon(Icons.refresh, size: 18),
-              onPressed: _loading ? null : _loadEpisodes,
-            ),
-        ],
-      ),
       body: GlassBackground(
         child: Column(
           children: [
             Expanded(
-              child: WatchSafeArea(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                    : _error != null
-                        ? _buildError()
-                        : _episodes.isEmpty
-                            ? _buildEmpty()
-                            : _buildEpisodeList(),
+              child: Stack(
+                children: [
+                  // 剧集列表
+                  WatchSafeArea(
+                    child: _loading
+                        ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                        : _error != null
+                            ? _buildError()
+                            : _episodes.isEmpty
+                                ? _buildEmpty()
+                                : _buildEpisodeList(),
+                  ),
+                  // 右上角返回/关闭按钮
+                  Positioned(
+                    top: ws.s(4),
+                    right: ws.s(4),
+                    child: _selectionMode
+                        ? GestureDetector(
+                            onTap: _exitSelectionMode,
+                            child: Container(
+                              height: ws.s(36),
+                              width: ws.s(36),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(ws.s(14)),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.close, size: 18, color: Colors.white70),
+                              ),
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              height: ws.s(36),
+                              width: ws.s(36),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(ws.s(14)),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.arrow_back, size: 18, color: Colors.white70),
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
               ),
             ),
             // 底部操作栏（多选模式下显示）
@@ -268,41 +285,9 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
     );
   }
 
-  Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          GlassContainer(
-            blur: 6, tintColor: Colors.red.withValues(alpha: 0.1), borderRadius: 20,
-            padding: const EdgeInsets.all(12),
-            child: const Icon(Icons.error_outline, size: 28, color: Colors.red),
-          ),
-          const SizedBox(height: 8),
-          Text('加载失败', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: _loadEpisodes,
-            child: GlassContainer(
-              blur: 6, tintColor: Colors.white.withValues(alpha: 0.08), borderRadius: 20,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: const Text('重试', style: TextStyle(fontSize: 12)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Text('暂无节目', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-    );
-  }
-
   Widget _buildEpisodeList() {
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 4, bottom: 16),
+      padding: const EdgeInsets.only(top: 4, bottom: 4),
       itemCount: _episodes.length,
       itemBuilder: (context, index) {
         final ep = _episodes[index];
@@ -325,6 +310,39 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
                 },
         );
       },
+    );
+  }
+
+  Widget _buildError() {
+    final ws = WearScale.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          GlassContainer(
+            blur: 6, tintColor: Colors.red.withValues(alpha: 0.1), borderRadius: 20,
+            padding: const EdgeInsets.all(12),
+            child: const Icon(Icons.error_outline, size: 28, color: Colors.red),
+          ),
+          const SizedBox(height: 8),
+          Text('加载失败', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _loadEpisodes,
+            child: GlassContainer(
+              blur: 6, tintColor: Colors.white.withValues(alpha: 0.08), borderRadius: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Text('重试', style: TextStyle(fontSize: ws.sp(12), color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Text('暂无节目', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
     );
   }
 }

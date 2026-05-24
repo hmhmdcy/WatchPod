@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../services/audio_service.dart';
 import '../widgets/glass_components.dart';
-import '../widgets/watch_safe_area.dart';
+import '../widgets/wear_scale.dart';
 
 class PlayerScreen extends StatelessWidget {
   final AudioService audioService;
@@ -14,175 +14,196 @@ class PlayerScreen extends StatelessWidget {
     final m = d.inMinutes.remainder(60);
     final s = d.inSeconds.remainder(60);
     if (h > 0) {
-      return '${h}:${m.toString().padLeft(2, "0")}:${s.toString().padLeft(2, "0")}';
+      return '$h:${m.toString().padLeft(2, "0")}:${s.toString().padLeft(2, "0")}';
     }
-    return '${m}:${s.toString().padLeft(2, "0")}';
+    return '$m:${s.toString().padLeft(2, "0")}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final ws = WearScale.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: GlassBackground(
-        child: WatchSafeArea(
-          child: ListenableBuilder(
-            listenable: audioService,
-            builder: (context, _) {
-              final ep = audioService.currentEpisode;
-              final pos = audioService.position;
-              final dur = audioService.duration ?? Duration(seconds: 1);
+        child: Stack(
+          children: [
+            // 播放器内容
+            Center(
+              child: ListenableBuilder(
+                listenable: audioService,
+                builder: (context, _) {
+                  final ep = audioService.currentEpisode;
+                  final pos = audioService.position;
+                  final dur = audioService.duration ?? Duration(seconds: 1);
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // 播客封面（毛玻璃）
-                    GlassImage(
-                      imageUrl: ep?.imageUrl,
-                      size: 100,
-                      borderRadius: 24,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // 剧集标题
-                    GlassContainer(
-                      blur: 6,
-                      tintColor: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: 10,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      child: Text(
-                        ep?.title ?? '未播放',
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // 可滑动进度条
-                    SizedBox(
-                      width: 160,
-                      child: SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: const Color(0xFF6C63FF),
-                          inactiveTrackColor: Colors.white24,
-                          thumbColor: const Color(0xFF6C63FF),
-                          thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 7),
-                          overlayShape: const RoundSliderOverlayShape(
-                              overlayRadius: 14),
-                          trackHeight: 3,
-                        ),
-                        child: Slider(
-                          value: min(
-                              pos.inMilliseconds /
-                                  max(dur.inMilliseconds, 1)
-                                      .toDouble(),
-                              1.0),
-                          onChanged: (v) {
-                            audioService
-                                .seek(dur * v);
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-
-                    // 时间标签
-                    Row(
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: ws.s(8)),
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(_formatDuration(pos),
-                            style: TextStyle(
-                                fontSize: 10, color: Colors.grey[400])),
-                        const SizedBox(width: 8),
-                        Text(_formatDuration(dur),
-                            style: TextStyle(
-                                fontSize: 10, color: Colors.grey[400])),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                        // 播客封面
+                        GlassImage(
+                          imageUrl: ep?.imageUrl,
+                          size: ws.capped(90, maxScale: 1.2),
+                          borderRadius: ws.s(24),
+                        ),
+                        SizedBox(height: ws.s(14)),
 
-                    // 播放控制按钮
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // 后退 15s（毛玻璃）
-                        GestureDetector(
-                          onTap: () {
-                            final newPos = pos - const Duration(seconds: 15);
-                            audioService.seek(newPos < Duration.zero
-                                ? Duration.zero
-                                : newPos);
-                          },
-                          child: GlassContainer(
-                            blur: 8,
-                            tintColor: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: 22,
-                            padding: const EdgeInsets.all(10),
-                            child: const Text('-15',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold)),
+                        // 剧集标题
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: ws.s(10), vertical: ws.s(8)),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(ws.s(10)),
                           ),
-                        ),
-                        const SizedBox(width: 20),
-
-                        // 播放/暂停（毛玻璃带主色）
-                        GestureDetector(
-                          onTap: () => audioService.togglePlayPause(),
-                          child: GlassContainer(
-                            blur: 8,
-                            tintColor:
-                                const Color(0xFF6C63FF).withValues(alpha: 0.6),
-                            borderRadius: 30,
-                            padding: const EdgeInsets.all(14),
-                            child: Icon(
-                              audioService.isPlaying ||
-                                      audioService.isBuffering
-                                  ? Icons.pause
-                                  : Icons.play_arrow,
+                          child: Text(
+                            ep?.title ?? '未播放',
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: ws.fs(13),
+                              fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              size: 30,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 20),
+                        SizedBox(height: ws.s(14)),
 
-                        // 前进 15s（毛玻璃）
-                        GestureDetector(
-                          onTap: () {
-                            final newPos = pos + const Duration(seconds: 15);
-                            audioService
-                                .seek(newPos > dur ? dur : newPos);
-                          },
-                          child: GlassContainer(
-                            blur: 8,
-                            tintColor: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: 22,
-                            padding: const EdgeInsets.all(10),
-                            child: const Text('+15',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold)),
+                        // 进度条
+                        SizedBox(
+                          width: ws.s(180),
+                          child: SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              activeTrackColor: const Color(0xFF6C63FF),
+                              inactiveTrackColor: Colors.white24,
+                              thumbColor: const Color(0xFF6C63FF),
+                              thumbShape: RoundSliderThumbShape(
+                                  enabledThumbRadius: ws.s(8)),
+                              overlayShape: RoundSliderOverlayShape(
+                                  overlayRadius: ws.s(16)),
+                              trackHeight: ws.s(4),
+                            ),
+                            child: Slider(
+                              value: min(
+                                  pos.inMilliseconds /
+                                      max(dur.inMilliseconds, 1).toDouble(),
+                                  1.0),
+                              onChanged: (v) => audioService.seek(dur * v),
+                            ),
                           ),
                         ),
+                        SizedBox(height: ws.s(4)),
+
+                        // 时间标签
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(_formatDuration(pos),
+                                style: TextStyle(fontSize: ws.sp(11), color: Colors.grey[400])),
+                            SizedBox(width: ws.s(10)),
+                            Text(_formatDuration(dur),
+                                style: TextStyle(fontSize: ws.sp(11), color: Colors.grey[400])),
+                          ],
+                        ),
+                        SizedBox(height: ws.s(16)),
+
+                        // 播放控制按钮
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // 后退 15s
+                            GestureDetector(
+                              onTap: () {
+                                final newPos = pos - const Duration(seconds: 15);
+                                audioService.seek(newPos < Duration.zero
+                                    ? Duration.zero
+                                    : newPos);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.all(ws.s(12)),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(ws.s(24)),
+                                ),
+                                child: Text('-15',
+                                    style: TextStyle(
+                                        fontSize: ws.sp(14),
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            SizedBox(width: ws.s(22)),
+
+                            // 播放/暂停
+                            GestureDetector(
+                              onTap: () => audioService.togglePlayPause(),
+                              child: Container(
+                                padding: EdgeInsets.all(ws.s(16)),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF6C63FF).withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(ws.s(32)),
+                                ),
+                                child: Icon(
+                                  audioService.isPlaying || audioService.isBuffering
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                  color: Colors.white,
+                                  size: ws.s(32),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: ws.s(22)),
+
+                            // 前进 15s
+                            GestureDetector(
+                              onTap: () {
+                                final newPos = pos + const Duration(seconds: 15);
+                                audioService.seek(newPos > dur ? dur : newPos);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.all(ws.s(12)),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(ws.s(24)),
+                                ),
+                                child: Text('+15',
+                                    style: TextStyle(
+                                        fontSize: ws.sp(14),
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: ws.s(16)),
                       ],
                     ),
-                  ],
+                  );
+                },
+              ),
+            ),
+
+            // ── 右上角返回按钮 ──
+            Positioned(
+              top: ws.s(4),
+              right: ws.s(4),
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  height: ws.s(36),
+                  width: ws.s(36),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(ws.s(14)),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.arrow_back, size: ws.s(18), color: Colors.white70),
+                  ),
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,102 +1,151 @@
-# WatchPod UI Components
+# WatchPod UI Components Reference
 
-> For AI consumption. v1.1 design system. Components in `lib/widgets/`.
+> For AI consumption. All sizes use WearScale for adaptive scaling.
 
 ## Design Tokens
 
-| Token | Value |
-|-------|-------|
-| Primary | `#6C63FF` |
-| Secondary | `#7C4DFF` |
-| Background gradient | `topLeft→bottomRight: #1A1A2E → #16213E → #0F3460` |
-| Glass tint | White @ 4-12% opacity |
-| Glass blur | sigmaX=sigmaY=12 |
-| Text primary | `#FFFFFF` |
-| Text secondary | `#FFFFFFB3` |
-| Slider track (active) | `#6C63FF` |
-| Slider track (inactive) | `white 24%` |
-| Slider thumb | `#6C63FF`, radius 7 |
-| Touch target min | 36dp (play/pause = 60dp encouraged) |
+### Colors
 
-## Component API — Quick Reference
+| Token | Hex | Usage |
+|-------|-----|-------|
+| Primary | `#6C63FF` | Accent, selected state, active tags, subscribe btn |
+| Glass bg | `Colors.white @ 0.1` | Frosted glass buttons |
+| Glass border | `Colors.white @ 0.12` | Button borders |
+| Background start | `#1A1A2E` | Gradient top-left |
+| Background mid | `#16213E` | Gradient middle |
+| Background end | `#0F3460` | Gradient bottom-right |
+| Text primary | `Colors.white` | Titles, labels |
+| Text secondary | `Colors.grey[400..600]` | Subtitles, authors |
 
-### GlassContainer
-```dart
-GlassContainer({
-  blur: 12, tintColor: 0x1AFFFFFF, borderRadius: 16,
-  borderOpacity: 0.08, padding: 12, // null → no border
-  width, height, margin, onTap,
-  child,
-})
-// On-screen usage: GestureDetector wrapping, or use onTap param.
+### Typography
+
+| Role | Base Size | Weight | Usage |
+|------|-----------|--------|-------|
+| tag-text | 11 | bold/normal | Tag filter bar (compact 30dp row) |
+| card-title | 13 | bold | Episode titles, podcast names |
+| body | 12 | normal | Episode titles |
+| subtitle | 11 | normal | Author names |
+| caption | 9-10 | normal | Timestamps, hints |
+
+## Virtual Tokens
+
+| Token | Behavior |
+|-------|----------|
+| `ws.sp(X)` | Font size, scales linearly from 360dp base |
+| `ws.s(X)` | Spacing, padding, scales linearly |
+| `ws.capped(X, maxScale: 1.2)` | Scales but caps at 1.2x (for covers) |
+| `ws.fs(X)` | Font size with floor (prevent oversized) |
+
+## Layout Architecture: Top-Bar + Full Content
+
+Since v1.4.0, ALL screens use a single-row top bar + full-height content below.
+
+### What this replaces
+
+- v1.0-v1.2: Bottom action bar pattern
+- v1.3: Three-zone balanced layout (top bar / center content / bottom action bar)
+- v1.4+: Top-bar + full content (bottom info bars removed — they waste vertical space on round watches)
+
+### Why
+
+Round smartwatch screens (360-466dp diameter) have limited usable vertical space. Dedicated bottom action bars consume 44-60dp. The top-bar pattern reclaims that for content.
+
+## HomeScreen Layout
+
+```
+┌──────────────────────────────────┐
+│ [全部][生活][科技] ... [+ 添加]  │  ← 顶部单行: 44dp h, Row
+├──────────────────────────────────┤
+│                                  │
+│        ┌──────────┐              │
+│        │  iPod 封面 │             │  ← Expanded, WatchSafeArea
+│        └──────────┘              │
+│        标题 / 作者                │
+│      ●    ●    ●                 │
+│                                  │
+└──────────────────────────────────┘
 ```
 
-### GlassBackground
-```dart
-Scaffold(extendBodyBehindAppBar: true, body: GlassBackground(child: ...))
-// Always wraps content + WatchSafeArea.
+### HomeScreen TopBar (44dp)
+- Row with two children: tag scroll + "add" button
+- **Left**: `Expanded(ListView(horizontal, BouncingScrollPhysics))` — tag chips
+- **Right**: `GestureDetector(Container)` — "add" button
+- Tag chip: height 30dp, horizontal padding 10dp, fontSize 11sp
+- Add button: height 30dp, same style as SettingsAddBar compact mode
+- Tags use `List<String> _allTagItems` where "全部" = null filter
+
+### HomeScreen Content (Expanded)
+- Empty state: center-aligned icon + "还没有订阅播客" + "添加一个订阅开始收听"
+- Has subscriptions: `_buildPodcastSection(ws)` inside WatchSafeArea
+  - 1 item: center-aligned PodcastTile, coverSize `ws.capped(96, maxScale: 1.2)`
+  - Multiple: PageView.builder, each page = PodcastTile + page indicator dots
+  - Tap cover → `_openEpisodes(sub)` → EpisodesScreen (push)
+
+## SettingsScreen Layout
+
+```
+┌──────────────────────────────────┐
+│  [+ 添加订阅]  🔄               │  ← 紧凑操作栏: 40dp h, SizedBox wrap
+├──────────────────────────────────┤
+│ 🔥 苹果热门播客                   │
+│ ┌────┬───────────┬──┐           │
+│ │36dp│ title     │+ │           │  ← 列表占满剩余空间
+│ │cvr │ author    │40│           │
+│ └────┴───────────┴──┘           │
+│ ...more items                   │
+│                                  │
+└──────────────────────────────────┘
 ```
 
-### GlassImage
-```dart
-GlassImage({imageUrl, size: 56, borderRadius: 16})
-// Default icon Icons.podcasts if imageUrl null.
-```
+### SettingsScreen TopBar (40dp)
+- Uses `SettingsAddBar(compact: true)` — button height 30dp, icon 14sp, text 11sp
+- Two buttons: "添加订阅" (left) + 🔄 refresh (right)
+- No AppBar, no back arrow. PopScope swipe-back on Scaffold.body.
 
-### PodcastTile
-```dart
-PodcastTile({
-  title, author?, imageUrl?, tags: const [],
-  required onTap,
-})
-// Layout: GlassImage(72×72) → GlassContainer(title) → author → tag chips (max 3)
-```
+### SettingsScreen Content (Expanded)
+- `HotPodcastList` with `showTitle: true`
+- Each item row: cover(36dp) + name(14sp) + author(11sp) + subscribe button(40dp circle)
 
-### EpisodeTile
-```dart
-EpisodeTile({
-  title, duration?, imageUrl?, // 🆕 v1.1 per-episode cover
-  isDownloaded: false, isPlaying: false,
-  required onTap,
-})
-// Layout: GlassImage(36×36) + title + [duration] + [download checkmark] | play icon
-```
-
-## Screen Template (copy-paste for new screens)
+## Glass Button Style
 
 ```dart
-Scaffold(
-  extendBodyBehindAppBar: true,
-  appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
-  body: GlassBackground(
-    child: WatchSafeArea(
-      child: /* content */,
+Container(
+  decoration: BoxDecoration(
+    color: Colors.white.withValues(alpha: 0.1),
+    borderRadius: BorderRadius.circular(ws.s(14)),
+    border: Border.all(
+      color: Colors.white.withValues(alpha: 0.15),
+      width: 0.5,
     ),
   ),
 )
 ```
 
-## GlassSlider Template
+Compact mode (used in top-bars): height 30dp, icon 14sp, text 11sp, icon+text gap 4dp.
+Default mode: height ~36dp, icon 16sp, text 12sp.
 
-```dart
-SliderTheme(
-  data: SliderTheme.of(context).copyWith(
-    activeTrackColor: Color(0xFF6C63FF),
-    inactiveTrackColor: Colors.white24,
-    thumbColor: Color(0xFF6C63FF),
-    thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7),
-    overlayShape: RoundSliderOverlayShape(overlayRadius: 14),
-    trackHeight: 3,
-  ),
-  child: Slider(value: v, onChanged: (v) => seek(dur * v)),
-)
-```
+## Key Components
 
-## New Component Rules
+### PodcastTile
+- Params: title, author, imageUrl, tags, onTap, coverSize
+- Cover: `ws.capped(96, maxScale: 1.2)` on HomeScreen
 
-1. snake_case filename = component name
-2. No barrel exports — import directly
-3. No hardcoded color values — use design tokens above
-4. Interactive elements: min 36dp touch radius
-5. Complex widgets need dartdoc
-6. Prefer GlassContainer wrapping over reimplementing BackdropFilter
+### EpisodeTile
+- Params: title, duration, imageUrl, isDownloaded, isPlaying, isSelected, onTap, onLongPress
+- Cover 32dp (capped). Row layout.
+
+### SettingsAddBar
+- Two modes: compact (top-bar) and default
+- Compact: height 30dp, small icons/text
+- Default: height 46dp, larger icons/text
+
+### HotPodcastList
+- Props: items, loading, error, subscribeError, showTitle, onItemTap, onSubscribe
+- Each item: cover(36dp, borderRadius 8dp), title(14sp), author(11sp), subscribe btn(40dp circle)
+
+### WatchSafeArea
+- Circular clip. Only wraps center content zone — top bar goes outside it.
+
+### Cache Behavior
+- TopPodcastService: 24h memory + file cache. `invalidateCache()` for manual refresh.
+- EpisodesScreen: cache-first (show immediately) → silent background RSS refresh.

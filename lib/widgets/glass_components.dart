@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'wear_scale.dart';
 
 /// 毛玻璃容器 — 带 BackdropFilter 的模糊效果容器
 class GlassContainer extends StatelessWidget {
@@ -30,6 +31,10 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 如果提供了 borderRadius 但没经过缩放，用上下文缩放
+    // 注意：这里假设调用方传入的 borderRadius 已经是经过 ws.s() 处理的
+    // 或者使用默认值
+
     final content = ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
@@ -53,10 +58,7 @@ class GlassContainer extends StatelessWidget {
     if (onTap != null) {
       return GestureDetector(
         onTap: onTap,
-        child: Container(
-          margin: margin,
-          child: content,
-        ),
+        child: Container(margin: margin, child: content),
       );
     }
 
@@ -64,7 +66,7 @@ class GlassContainer extends StatelessWidget {
   }
 }
 
-/// 毛玻璃背景 — 铺满整个屏幕，一般放在 Scaffold 的 extendBodyBehindAppBar 场景
+/// 毛玻璃背景 — 铺满整个屏幕
 class GlassBackground extends StatelessWidget {
   final Widget child;
 
@@ -74,7 +76,6 @@ class GlassBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // 渐变背景
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -88,7 +89,6 @@ class GlassBackground extends StatelessWidget {
             ),
           ),
         ),
-        // 装饰光晕
         Positioned(
           top: -80,
           right: -40,
@@ -113,7 +113,6 @@ class GlassBackground extends StatelessWidget {
             ),
           ),
         ),
-        // 前景内容
         child,
       ],
     );
@@ -135,13 +134,18 @@ class GlassImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 用 WarnScale.capped 限制封面最大尺寸
+    final ws = WearScale.of(context);
+    final imgSize = ws.capped(size, maxScale: 1.15);
+    final imgRadius = ws.s(borderRadius);
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.circular(imgRadius),
       child: Container(
-        width: size,
-        height: size,
+        width: imgSize,
+        height: imgSize,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(imgRadius),
           border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
         child: Stack(
@@ -151,19 +155,18 @@ class GlassImage extends StatelessWidget {
                 child: Image.network(
                   imageUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, a, b) =>
-                      const Icon(Icons.podcasts, size: 28, color: Colors.grey),
+                  errorBuilder: (_, a, b) => const Icon(Icons.podcasts,
+                      size: 28, color: Colors.grey),
                 ),
               )
             else
               const Center(
                 child: Icon(Icons.podcasts, size: 28, color: Colors.grey),
               ),
-            // 玻璃光泽
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(borderRadius),
+                  borderRadius: BorderRadius.circular(imgRadius),
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
