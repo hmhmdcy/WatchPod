@@ -1,11 +1,12 @@
 # WatchPod — Agent Context
 
-> DEVICE: Wear OS smartwatch (round, 360x360 ~ 466x466)
-> PRIMARY TARGET: Huawei Watch 3 (466×466 px, 320 DPI, ~233 dp logical)
-> SDK: Flutter 3.44 / Dart 3.12 / Android SDK 35+36
-> PACKAGE: com.watchpod.watchpod
-> TARGET: Release APK for ARMv7 (Huawei Watch 3), ARM64. Debug for x86_64 (emulator)
-> WEARSCALE BASE: 280 dp (not standard 360 dp). See ARCHITECTURE.md for rationale.
+|> DEVICE: Wear OS smartwatch (round, 360x360 ~ 466x466) / Linux Desktop 466×466 circular debug shell
+|> PRIMARY TARGET: Huawei Watch 3 (466×466 px, 320 DPI, ~233 dp logical)
+|> SDK: Flutter 3.44 / Dart 3.12 / Android SDK 35+36
+|> PACKAGE: com.watchpod.watchpod
+|> TARGET: Release APK for ARMv7 (Huawei Watch 3), ARM64. Debug for x86_64 (emulator)
+|> WEARSCALE BASE: 280 dp (not standard 360 dp). See ARCHITECTURE.md for rationale.
+|> LINUX DEBUG: flutter build linux --debug → ./build/linux/x64/debug/bundle/watchpod (466×466, undecorated, circular ClipRRect). Screenshot with xwd, not scrot. Cleanup: pkill -f 'watchpod.*linux'
 
 ## TRIGGER CONDITIONS
 
@@ -48,3 +49,5 @@ WHEN task involves:
 13. **Arc coordinate system**: TagTrack's `CustomPaint` uses `OverflowBox` to fill the entire screen. Canvas origin (0,0) = screen (0,0). Arc points computed directly as `(centerX + R*cos(θ), centerY + R*sin(θ))` — no offset translation needed. This ensures identical rendering on Web, emulator, and real device.
 14. **TagTrack must have GestureDetector (v1.8.2)**: The arc is purely visual without a gesture handler. `TagTrack.build()` must always include a `GestureDetector` with `onVerticalDragStart/Update/End` and `onTapUp`. Without it, drag/tap on the arc has zero effect.
 15. **TagTrack must be outside SafeArea (v1.8.2)**: On round screens, `SafeArea` adds padding that shifts the 40dp touch zone away from the screen right edge. In `HomeScreen.build()`, TagTrack's `Positioned.fill` must be in the outer `Stack` (outside `SafeArea`), not nested inside it.
+16. **Linux Desktop: xwd NOT scrot/ffmpeg (v1.8.3)**: In WSL2/WSLg, standard screenshot tools capture WSL-internal display (blank/black). Use `xwd` to read pixels from X11 shared memory directly. Workflow: `xdotool search --name watchpod` → `xwd -id <ID> -out /tmp/wp.xwd` → `convert /tmp/wp.xwd /tmp/wp.png` → `vision_analyze`.
+17. **Linux Desktop: cleanup after use (v1.8.3)**: Always run `pkill -f 'watchpod.*linux'` after debugging. Leftover processes accumulate and consume GPU/CPU resources. The 466×466 undecorated window persists on the Windows desktop until killed.

@@ -1,5 +1,16 @@
 # WatchPod Changelog
 
+## v1.8.3 — 2026-05-25
+
+### Added
+- **Linux Desktop 调试环境** — 窗口尺寸改为 466×466（`linux/runner/my_application.cc`），去掉标题栏（`gtk_window_set_decorated(FALSE)`）
+- **Linux Desktop 圆形裁剪** — `_WebDebugShell` 改为 StatelessWidget，固定 `watchSize=466`，`ClipRRect` 圆形裁剪 + `MediaQuery` 覆盖
+- **`_LinuxDebugPages`** — 新增 `_LinuxDebugPages` StatefulWidget，四页导航（Home/Episodes/Player/Settings）供 Linux Desktop 调试用
+
+### Changed
+- **TagTrack GestureDetector** — 加上 `behavior: HitTestBehavior.translucent`，扩大触摸区域命中范围
+- **`_WebDebugShell`** — 从 `StatefulWidget` 重构为 `StatelessWidget`，由新 `_LinuxDebugPages` 管理状态
+
 ## v1.8.2 — 2026-05-25
 
 ### Fixed
