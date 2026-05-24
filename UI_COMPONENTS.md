@@ -53,33 +53,33 @@ Round smartwatch screens (360-466dp diameter) have limited usable vertical space
 ## HomeScreen Layout
 
 ```
-┌──────────────────────────────────┐
-│ [全部][生活][科技] ... [+ 添加]  │  ← 顶部单行: 44dp h, Row
-├──────────────────────────────────┤
-│                                  │
-│        ┌──────────┐              │
-│        │  iPod 封面 │             │  ← Expanded, WatchSafeArea
-│        └──────────┘              │
-│        标题 / 作者                │
-│      ●    ●    ●                 │
-│                                  │
-└──────────────────────────────────┘
+┌──────────────────────┐
+│                       │
+│                       │ ╲ ← TagTrack arc track
+│        ┌──────────┐  ╱   (3dp, alpha 0.45)
+│        │  iPod 封面 │  ╲  紧贴圆形右边缘
+│        └──────────┘  ╱
+│        标题 / 作者   ╲
+│      ●    ●    ●    ╱
+│                       │
+└──────────────────────┘
 ```
 
-### HomeScreen TopBar (44dp)
-- Row with two children: tag scroll + "add" button
-- **Left**: `Expanded(ListView(horizontal, BouncingScrollPhysics))` — tag chips
-- **Right**: `GestureDetector(Container)` — "add" button
-- Tag chip: height 30dp, horizontal padding 10dp, fontSize 11sp
-- Add button: height 30dp, same style as SettingsAddBar compact mode
-- Tags use `List<String> _allTagItems` where "全部" = null filter
-
-### HomeScreen Content (Expanded)
+### HomeScreen Content (Expanded, full width)
 - Empty state: center-aligned icon + "还没有订阅播客" + "添加一个订阅开始收听"
 - Has subscriptions: `_buildPodcastSection(ws)` inside WatchSafeArea
   - 1 item: center-aligned PodcastTile, coverSize `ws.capped(96, maxScale: 1.2)`
   - Multiple: PageView.builder, each page = PodcastTile + page indicator dots
   - Tap cover → `_openEpisodes(sub)` → EpisodesScreen (push)
+
+### TagTrack — Right Edge Arc Track
+- Located in a 24dp-wide SizedBox on the right of the HomeScreen Row
+- Visual: 3dp white arc (alpha 0.45), inset ~3dp from right edge, runs ~85% of height
+- Touch zone: 40dp wide GestureDetector, activates when dx < 20dp from arc center
+- On drag: white slider dot + purple label bubble (shows current tag name)
+- Tags: ["全部"(null), ...widget.tags] — mapped from full vertical range
+- Bottom 15% hover for 2s → purple "添加订阅" bubble → triggers `onAddSubscription`
+- Uses `_TagTrackPainter` CustomPainter for the arc line + slider dot
 
 ## SettingsScreen Layout
 

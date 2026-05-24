@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import '../models/podcast_subscription.dart';
 import '../models/episode.dart';
@@ -46,6 +47,23 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   }
 
   Future<void> _loadEpisodes() async {
+    if (kIsWeb) {
+      // Web 调试：注入模拟剧集数据
+      _episodes = List.generate(8, (i) => Episode(
+        id: 'mock-ep-$i',
+        podcastId: widget.podcast.id,
+        title: '第${i + 1}期：${['AI 时代来临', '科技前沿', '文化漫谈', '生活感悟', '创业故事', '读书笔记', '音乐推荐', '深度访谈'][i]}',
+        description: '这是一段节目简介，用来测试圆形屏幕下的列表布局效果。',
+        audioUrl: null,
+        imageUrl: widget.podcast.imageUrl,
+        publishedAt: DateTime.now().subtract(Duration(days: i)),
+        duration: Duration(minutes: 30 + i * 5),
+        isDownloaded: i < 2,
+      ));
+      _latestImageUrl = widget.podcast.imageUrl;
+      setState(() => _loading = false);
+      return;
+    }
     try {
       setState(() => _loading = true);
       final cached = await widget.storageService.loadEpisodes(widget.podcast.id);

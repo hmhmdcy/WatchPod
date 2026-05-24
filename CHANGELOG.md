@@ -1,6 +1,25 @@
 # WatchPod Changelog
 
-## v1.7.0 — 2026-05-24
+## v1.8.0 — 2026-05-24
+
+### Changed
+- **HomeScreen: right-side panel → arc track** — Replaced the entire right-side arched panel (`ClipPath` + button list) with `TagTrack`, a tight arc track (3dp) glued to the right circular screen edge. Finger touch reveals a slider dot + tag label bubble; drag vertically to switch tags; hover at bottom for 2s triggers "add subscription".
+- **HomeScreen layout: row split → full width + arc track** — Content area now occupies full `Expanded` width, with only a 24dp touch zone on the right for the arc track. No more 1/4 right panel.
+- **Web debug shell: removed bottom nav bar** — kIsWeb `_WebDebugShell` no longer shows the "首页/节目/播放/设置" bottom bar, making Web screenshots closer to actual watch display.
+
+### Removed
+- `_ArcShape` clipper (no longer needed after right panel removal)
+- `_allTagItems` / `_selectTag` / `_openPlayer` methods (old button-based tag filter removed)
+- Right panel container with ClipPath, GlassBackground, button list
+
+### Added
+- `TagTrack` widget (`lib/widgets/home_tag_track.dart`) — CustomPaint arc track, GestureDetector vertical drag, label bubble overlay, 2s bottom hover to add subscription.
+
+### Documentation
+- AGENTS.md: Added TagTrack cross-ref, updated HomeScreen description, added Web debug shell note
+- ARCHITECTURE.md: Added `home_tag_track.dart` to file structure, updated home_screen description
+- UI_COMPONENTS.md: Replaced HomeScreen layout diagram with arc track version, added TagTrack section
+- .gitignore: Added screenshot_*.png pattern to prevent local test screenshots from being committed
 
 ### Changed
 - **WearScale base: 360 → 280** — Huawei Watch 3 has ~370 dp usable (466×466 px @ 320 DPI). With base=280, ratio ≈ 1.32×, ensuring buttons (36→47dp), icons (18→24sp) and all elements are large enough for finger touch. This is a one-line change that globally scales all `ws.s()`, `ws.sp()`, `ws.fs()` calls. See ARCHITECTURE.md for device specs.

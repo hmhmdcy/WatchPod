@@ -21,13 +21,15 @@ WHEN task involves:
 ## KEY CROSS-REFERENCES
 
 - **watchpod-ui skill**: Contains the complete layout specification for all screens. Load this FIRST before any UI work. It encodes the top-bar + full-content pattern, WearScale usage rules, three-zone history (don't revert), and all current constraints.
-- **WearScale**: Adaptive sizing system. `WearScale.of(context).sp(12)` scales 12px to fit screens. **Base is 280 dp** (set for Huawei Watch 3, which has ~370 dp usable). All hardcoded sizes must use this.
-- **HomeScreen**: Top-bar layout: tag scroll row + "add" button in one line (48dp). Below: full-height podcast cover / empty state.
+- **WearScale**: Adaptive sizing system. `WearScale.of(context).sp(12)` scales 12px to fit screens. **Base is 280 dp**. All hardcoded sizes must use this.
+- **TagTrack** (`lib/widgets/home_tag_track.dart`): Arc track glued to the right circular screen edge. CustomPaint arc (3dp, alpha 0.45), GestureDetector vertical drag for tag switching, 2s bottom hover to add subscription. Replaces the old right-side panel.
+- **HomeScreen**: Full-width content + 24dp right touch zone for TagTrack arc track. No more 1/4 right panel.
 - **SettingsScreen**: Top-bar layout: compact "add subscription" button + refresh button (48dp). Below: full-height hot podcast list. No info bar.
 - **TopPodcastService**: `lib/services/top_podcast_service.dart`. 24h memory+file cache. `getTopPodcasts()` → iTunes RSS. `resolveFeedUrls()` → iTunes lookup.
 - **HotPodcastList**: `lib/widgets/hot_podcast_list.dart`. Cover(42dp) + title(15sp) + subscribe(44dp). Optional `showTitle` flag.
 - **EpisodesScreen**: Uses direct Scaffold (NOT WatchLayout). Only a centered back arrow (←) in AppBar title slot. Multi-select mode switches to close button. Cache-first: shows cached episodes immediately, silently refreshes RSS. **CRITICAL: Do NOT wrap in WatchLayout** — the `showAppBar: false` + `extendBodyBehindAppBar: true` combo shifts content off-screen on round hardware.
 - **StorageService**: Silently returns [] on parse failure. No migration support.
+- **Web debug shell** (`main.dart` `_WebDebugShell`): Bottom nav bar removed for accurate round-screen simulation. Page switching done by editing `_currentPage` in source.
 
 ## KEY PITFALLS
 

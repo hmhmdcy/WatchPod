@@ -39,10 +39,10 @@ lib/
 │   ├── episode.dart
 │   └── podcast_subscription.dart
 ├── screens/
-│   ├── home_screen.dart       # Top-bar layout: tag row + add btn / full-height cover (~280 lines)
-│   ├── episodes_screen.dart   # Episode list: cache-first + silent RSS refresh
-│   ├── player_screen.dart     # Seekable Slider + play/pause + skip15
-│   └── settings_screen.dart   # Top-bar layout: compact add+refresh / full-height hot list (~350 lines)
+|   ├── home_screen.dart       # Full-width content + right TagTrack arc track (~230 lines)
+|   ├── episodes_screen.dart   # Episode list: cache-first + silent RSS refresh
+|   ├── player_screen.dart     # Seekable Slider + play/pause + skip15
+|   └── settings_screen.dart   # Top-bar layout: compact add+refresh / full-height hot list (~350 lines)
 ├── services/
 │   ├── audio_service.dart
 │   ├── rss_service.dart
@@ -56,6 +56,7 @@ lib/
     ├── podcast_tile.dart
     ├── settings_add_bar.dart  # compact + default modes
     ├── settings_info_bar.dart # Unused since v1.4.0 (kept for reference)
+    ├── home_tag_track.dart    # CustomPaint arc track + GestureDetector tag selection
     ├── watch_safe_area.dart
     ├── watch_layout.dart
     └── wear_scale.dart
