@@ -16,7 +16,11 @@ class WearScale {
 
   WearScale._(this.screenShortSide);
 
-  /// 基准尺寸（按华为 Watch 3 的实际 dp 调整，确保按钮足够大）
+  /// 基准尺寸
+  /// 华为 Watch 3 分辨率 466x466px @ 320 DPI
+  /// 物理像素 466px, 密度因子 2.0 → 逻辑 233dp
+  /// 但 HarmonyOS 实际报告给 Flutter 的 shortestSide ≈ 370dp（有差异）
+  /// 实测 base=280 → ratio≈1.32, ws.s(36)≈47.5dp ✅ 按钮够大
   static const double base = 280.0;
 
   /// 构建 WearScale，用 [MediaQuery] 的短边

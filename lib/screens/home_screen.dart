@@ -132,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _selectTag(int index) {
     setState(() {
-      _activeTag = index == 0 ? null : _allTags[index - 1];
+      _activeTag == null ? _activeTag = _allTags[0] : null;
     });
   }
 
@@ -146,40 +146,85 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : Row(
-                  children: [
-                    // ── 内容主体：左 2/3 ──
-                    Expanded(
-                      flex: 2,
-                      child: _subscriptions.isEmpty
-                          ? _buildEmptyState(ws)
-                          : WatchSafeArea(
-                              child: _buildPodcastSection(ws),
-                            ),
-                    ),
-
-                    // ── 右侧操作栏：约 1/4 宽，弧条贴表盘 ──
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width / 4.2,
-                      child: ClipPath(
-                        clipper: const _ArcShape(),
-                        child: Container(
-                          padding: EdgeInsets.only(top: ws.s(4), bottom: ws.s(4)),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.03),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              bottomLeft: Radius.circular(24),
-                            ),
-                          ),
-                          child: Center(
-                            child: _buildTopBar(ws),
+              : _subscriptions.isEmpty
+                  ? Stack(
+                      children: [
+                        // 居中空状态（整体上移，给底部按钮让空间）
+                        Center(
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: ws.s(42)),
+                            child: _buildEmptyState(ws),
                           ),
                         ),
-                      ),
+                        // 底部「添加」按钮
+                        Positioned(
+                          bottom: ws.s(16),
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: GestureDetector(
+                              onTap: _openSettings,
+                              child: Container(
+                                height: ws.s(42),
+                                padding: EdgeInsets.symmetric(horizontal: ws.s(24)),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(ws.s(21)),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.add, color: Colors.white, size: ws.s(18)),
+                                    SizedBox(width: ws.s(4)),
+                                    Text('添加',
+                                        style: TextStyle(
+                                            fontSize: ws.sp(14),
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        // ── 内容主体：左 2/3 ──
+                        Expanded(
+                          flex: 2,
+                          child: WatchSafeArea(
+                            child: _buildPodcastSection(ws),
+                          ),
+                        ),
+
+                        // ── 右侧操作栏：约 1/4 宽，弧条贴表盘 ──
+                        SizedBox(
+                          width: MediaQuery.of(context).size.width / 4.2,
+                          child: ClipPath(
+                            clipper: const _ArcShape(),
+                            child: Container(
+                              padding: EdgeInsets.only(top: ws.s(4), bottom: ws.s(4)),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.03),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(24),
+                                  bottomLeft: Radius.circular(24),
+                                ),
+                              ),
+                              child: Center(
+                                child: _buildTopBar(ws),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
         ),
       ),
     );

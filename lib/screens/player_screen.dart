@@ -96,17 +96,17 @@ class PlayerScreen extends StatelessWidget {
 
                         // 进度条
                         SizedBox(
-                          width: ws.s(180),
+                          width: min(ws.s(180), MediaQuery.of(context).size.width * 0.75),
                           child: SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               activeTrackColor: const Color(0xFF6C63FF),
                               inactiveTrackColor: Colors.white24,
                               thumbColor: const Color(0xFF6C63FF),
                               thumbShape: RoundSliderThumbShape(
-                                  enabledThumbRadius: ws.s(8)),
+                                  enabledThumbRadius: ws.s(7)),
                               overlayShape: RoundSliderOverlayShape(
-                                  overlayRadius: ws.s(16)),
-                              trackHeight: ws.s(4),
+                                  overlayRadius: ws.s(14)),
+                              trackHeight: ws.s(3),
                             ),
                             child: Slider(
                               value: min(
@@ -157,27 +157,27 @@ class PlayerScreen extends StatelessWidget {
                                         fontWeight: FontWeight.bold)),
                               ),
                             ),
-                            SizedBox(width: ws.s(22)),
+                            SizedBox(width: ws.s(14)),
 
                             // 播放/暂停
                             GestureDetector(
                               onTap: () => audioService.togglePlayPause(),
                               child: Container(
-                                padding: EdgeInsets.all(ws.s(16)),
+                                padding: EdgeInsets.all(ws.s(14)),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF6C63FF).withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(ws.s(32)),
+                                  borderRadius: BorderRadius.circular(ws.s(28)),
                                 ),
                                 child: Icon(
                                   audioService.isPlaying || audioService.isBuffering
                                       ? Icons.pause
                                       : Icons.play_arrow,
                                   color: Colors.white,
-                                  size: ws.s(32),
+                                  size: ws.s(28),
                                 ),
                               ),
                             ),
-                            SizedBox(width: ws.s(22)),
+                            SizedBox(width: ws.s(14)),
 
                             // 前进 15s
                             GestureDetector(

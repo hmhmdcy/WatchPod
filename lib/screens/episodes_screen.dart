@@ -238,7 +238,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
             // 底部操作栏（多选模式下显示）
             if (_selectionMode)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: ws.s(16), vertical: ws.s(8)),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1A1A2E).withValues(alpha: 0.95),
                   border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
@@ -252,19 +252,19 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
                           blur: 6,
                           tintColor: const Color(0xFF6C63FF).withValues(alpha: 0.2),
                           borderRadius: 10,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: const Row(
+                          padding: EdgeInsets.symmetric(vertical: ws.s(10)),
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.download, size: 16, color: Color(0xFF6C63FF)),
-                              SizedBox(width: 6),
-                              Text('下载', style: TextStyle(fontSize: 12, color: Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
+                              Icon(Icons.download, size: ws.s(16), color: const Color(0xFF6C63FF)),
+                              SizedBox(width: ws.s(6)),
+                              Text('下载', style: TextStyle(fontSize: ws.sp(12), color: const Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: ws.s(12)),
                     Expanded(
                       child: GestureDetector(
                         onTap: _batchDelete,
@@ -272,13 +272,13 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
                           blur: 6,
                           tintColor: Colors.red.withValues(alpha: 0.15),
                           borderRadius: 10,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: const Row(
+                          padding: EdgeInsets.symmetric(vertical: ws.s(10)),
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                              SizedBox(width: 6),
-                              Text('删除', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
+                              Icon(Icons.delete_outline, size: ws.s(16), color: Colors.red),
+                              SizedBox(width: ws.s(6)),
+                              Text('删除', style: TextStyle(fontSize: ws.sp(12), color: Colors.red, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -294,8 +294,9 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   }
 
   Widget _buildEpisodeList() {
+    final ws = WearScale.of(context);
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      padding: EdgeInsets.only(top: ws.s(4), bottom: ws.s(4)),
       itemCount: _episodes.length,
       itemBuilder: (context, index) {
         final ep = _episodes[index];
@@ -332,14 +333,14 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
             padding: const EdgeInsets.all(12),
             child: const Icon(Icons.error_outline, size: 28, color: Colors.red),
           ),
-          const SizedBox(height: 8),
-          Text('加载失败', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-          const SizedBox(height: 12),
+          SizedBox(height: ws.s(8)),
+          Text('加载失败', style: TextStyle(fontSize: ws.sp(13), color: Colors.grey[400])),
+          SizedBox(height: ws.s(12)),
           GestureDetector(
             onTap: _loadEpisodes,
             child: GlassContainer(
               blur: 6, tintColor: Colors.white.withValues(alpha: 0.08), borderRadius: 20,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: ws.s(20), vertical: ws.s(10)),
               child: Text('重试', style: TextStyle(fontSize: ws.sp(12), color: Colors.white)),
             ),
           ),
@@ -349,8 +350,9 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   }
 
   Widget _buildEmpty() {
+    final ws = WearScale.of(context);
     return Center(
-      child: Text('暂无节目', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
+      child: Text('暂无节目', style: TextStyle(fontSize: ws.sp(13), color: Colors.grey[400])),
     );
   }
 }
