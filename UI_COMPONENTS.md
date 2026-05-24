@@ -1,6 +1,6 @@
 # WatchPod UI Components Reference
 
-> For AI consumption. All sizes use WearScale for adaptive scaling.
+> For AI consumption. All sizes use WearScale for adaptive scaling (base=280).
 
 ## Design Tokens
 
@@ -16,95 +16,190 @@
 | Background end | `#0F3460` | Gradient bottom-right |
 | Text primary | `Colors.white` | Titles, labels |
 | Text secondary | `Colors.grey[400..600]` | Subtitles, authors |
+| Arc track | `Color(0xB0FFFFFF)` | Semi-transparent white arc on right edge |
 
 ### Typography
 
 | Role | Base Size | Weight | Usage |
 |------|-----------|--------|-------|
-| tag-text | 11 | bold/normal | Tag filter bar (compact 30dp row) |
 | card-title | 13 | bold | Episode titles, podcast names |
 | body | 12 | normal | Episode titles |
 | subtitle | 11 | normal | Author names |
 | caption | 9-10 | normal | Timestamps, hints |
+| arc-label | 12 | bold | TagTrack floating label bubble |
 
-## Virtual Tokens
+### Virtual Tokens
 
 | Token | Behavior |
 |-------|----------|
-| `ws.sp(X)` | Font size, scales linearly from 360dp base |
+| `ws.sp(X)` | Font size, scales from 280dp base |
 | `ws.s(X)` | Spacing, padding, scales linearly |
 | `ws.capped(X, maxScale: 1.2)` | Scales but caps at 1.2x (for covers) |
 | `ws.fs(X)` | Font size with floor (prevent oversized) |
 
-## Layout Architecture: Top-Bar + Full Content
+## Layout Architecture Overview
 
-Since v1.4.0, ALL screens use a single-row top bar + full-height content below.
+Since v1.8.1, TWO layout patterns are used depending on screen:
 
-### What this replaces
+| Screen | Pattern | Content |
+|--------|---------|---------|
+| **HomeScreen** | Stack + right arc track overlay | Full-width content (centered) + TagTrack overlay |
+| **All others** | AppBar centered buttons + full content | Scaffold(extendBodyBehindAppBar) + WatchSafeArea(body) |
 
-- v1.0-v1.2: Bottom action bar pattern
-- v1.3: Three-zone balanced layout (top bar / center content / bottom action bar)
-- v1.4+: Top-bar + full content (bottom info bars removed — they waste vertical space on round watches)
-
-### Why
-
-Round smartwatch screens (360-466dp diameter) have limited usable vertical space. Dedicated bottom action bars consume 44-60dp. The top-bar pattern reclaims that for content.
-
-## HomeScreen Layout
+## HomeScreen Layout (v1.8.1+)
 
 ```
-┌──────────────────────┐
-│                       │
-│                       │ ╲ ← TagTrack arc track
-│        ┌──────────┐  ╱   (3dp, alpha 0.45)
-│        │  iPod 封面 │  ╲  紧贴圆形右边缘
-│        └──────────┘  ╱
-│        标题 / 作者   ╲
-│      ●    ●    ●    ╱
-│                       │
-└──────────────────────┘
+  ┌──────────────────────┐
+  │                        │
+  │         ┌────┐        │ ╲ ← TagTrack arc (10dp frosted glass)
+  │         │封面│        │ ╱   -45° to 45°, circle equation
+  │         └────┘        ╲  紧贴圆形右边缘
+  │       标题 / 作者      ╱
+  │       ●    ●    ●     ╲
+  │                        │
+  └──────────────────────┘
 ```
 
-### HomeScreen Content (Expanded, full width)
-- Empty state: center-aligned icon + "还没有订阅播客" + "添加一个订阅开始收听"
-- Has subscriptions: `_buildPodcastSection(ws)` inside WatchSafeArea
-  - 1 item: center-aligned PodcastTile, coverSize `ws.capped(96, maxScale: 1.2)`
-  - Multiple: PageView.builder, each page = PodcastTile + page indicator dots
-  - Tap cover → `_openEpisodes(sub)` → EpisodesScreen (push)
+### Architecture Detail
 
-### TagTrack — Right Edge Arc Track
-- Located in a 24dp-wide SizedBox on the right of the HomeScreen Row
-- Visual: 3dp white arc (alpha 0.45), inset ~3dp from right edge, runs ~85% of height
-- Touch zone: 40dp wide GestureDetector, activates when dx < 20dp from arc center
-- On drag: white slider dot + purple label bubble (shows current tag name)
-- Tags: ["全部"(null), ...widget.tags] — mapped from full vertical range
-- Bottom 15% hover for 2s → purple "添加订阅" bubble → triggers `onAddSubscription`
-- Uses `_TagTrackPainter` CustomPainter for the arc line + slider dot
-
-## SettingsScreen Layout
-
-```
-┌──────────────────────────────────┐
-│  [+ 添加订阅]  🔄               │  ← 紧凑操作栏: 40dp h, SizedBox wrap
-├──────────────────────────────────┤
-│ 🔥 苹果热门播客                   │
-│ ┌────┬───────────┬──┐           │
-│ │36dp│ title     │+ │           │  ← 列表占满剩余空间
-│ │cvr │ author    │40│           │
-│ └────┴───────────┴──┘           │
-│ ...more items                   │
-│                                  │
-└──────────────────────────────────┘
+```dart
+Stack(
+  children: [
+    Positioned.fill(
+      child: WatchSafeArea(
+        child: _buildPodcastSection(ws),  // centered content
+      ),
+    ),
+    Positioned.fill(
+      child: _buildTopBar(ws),  // → TagTrack overlay
+    ),
+  ],
+)
 ```
 
-### SettingsScreen TopBar (40dp)
-- Uses `SettingsAddBar(compact: true)` — button height 30dp, icon 14sp, text 11sp
-- Two buttons: "添加订阅" (left) + 🔄 refresh (right)
-- No AppBar, no back arrow. PopScope swipe-back on Scaffold.body.
+**Why Stack instead of Row:** Previous `Row(children: [Expanded(...), SizedBox(width:24, TagTrack)])` offset the geometric center by 12dp, making the podcast cover appear off-center. Stack with `Positioned.fill` keeps WatchSafeArea truly centered.
 
-### SettingsScreen Content (Expanded)
-- `HotPodcastList` with `showTitle: true`
-- Each item row: cover(36dp) + name(14sp) + author(11sp) + subscribe button(40dp circle)
+### HomeScreen Content
+
+- **Empty state:** `_buildEmptyState(ws)` — centered icon + "还没有订阅播客" + "添加一个订阅开始收听" + bottom-center "添加" button
+- **Has subscriptions:** `_buildPodcastSection(ws)` inside WatchSafeArea
+  - 1 item: center-aligned `PodcastTile`, coverSize `ws.capped(96, maxScale: 1.2)`
+  - Multiple: `PageView.builder(scrollDirection: Axis.vertical)`, each page = PodcastTile + dot indicator
+  - Tap cover → `_openEpisodes(sub)`
+
+## TagTrack — Right Edge Frosted-Glass Arc Track
+
+### Architecture
+
+```
+SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
+  └─ Stack
+       ├─ Positioned.fill
+       │   └─ OverflowBox(minWidth:screenWidth)
+       │       └─ CustomPaint(size: screenSize)
+       │           └─ _TagTrackArcPainter   ← arc at screen-global coordinates
+       │              - canvas origin (0,0) = screen (0,0)
+       │              - arc: x=CX+R*cos(θ), y=CY+R*sin(θ)  (-45° to 45°)
+       │              - 10dp semi-transparent white + MaskFilter blur
+       └─ Positioned.fill (label overlays when dragging)
+```
+
+### Key Design Decisions
+
+| Decision | Why |
+|----------|-----|
+| `OverflowBox` instead of `Positioned.fill(left:-N)` | `OverflowBox` gives true full-screen canvas at correct world-space coordinates. `Positioned.fill(left:-N)` introduced coordinate translation bugs because the offset depends on parent container width, which differs between Web and real device. |
+| `arcRadius = r` (no inset) | User explicitly wanted arc "紧贴圆边" (tight against the circular bezel) |
+| -45° to 45° | Arc covers ~1/4 circle (right side, about half screen height). User said previous full right semicircle was "太长了" |
+| `MaskFilter.blur(BlurStyle.normal, 10)` | Creates frosted glass glow under the semi-transparent white stroke. First layer: 14dp blur + 0.15 opacity. Top layer: 10dp + 0.69 opacity. |
+| `GestureDetector` in SizedBox(40dp) | Touch zone restricted to right edge so swiping left side won't trigger tag changes |
+
+### Interaction Model
+
+- **Idle state:** Arc visible on right edge (frosted glass, 10dp)
+- **Touch near arc** (within 30dp of nearest point): Activates drag — white slider dot (6dp radius) + purple floating label bubble
+- **Drag:** Labels change as slider passes through each tag zone: "全部" → [tag1] → [tag2] → ...
+- **Bottom 85%+:** 2s hold → purple glow + "添加订阅" bubble → auto-navigate to SettingsScreen
+- **Lift:** Commits selected tag as active filter
+
+## SettingsScreen Layout (v1.8.1+)
+
+```dart
+Scaffold(
+  extendBodyBehindAppBar: true,
+  appBar: AppBar(
+    backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
+    scrolledUnderElevation: 0,
+    surfaceTintColor: Colors.transparent,
+    centerTitle: true,
+    automaticallyImplyLeading: false,
+    title: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _backButton(),    // ← glass pill 36dp
+        SizedBox(width: ws.s(6)),
+        _refreshButton(), // 🔄 glass pill 36dp
+        SizedBox(width: ws.s(6)),
+        _addButton(),     // + glass pill 36dp
+      ],
+    ),
+  ),
+  body: GlassBackground(
+    child: Column(
+      children: [
+        Expanded(child: WatchSafeArea(child: HotPodcastList(...))),
+      ],
+    ),
+  ),
+);
+```
+
+## EpisodesScreen Layout (v1.8.1+)
+
+```
+Scaffold(
+  extendBodyBehindAppBar: true,
+  appBar: AppBar(
+    backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
+    scrolledUnderElevation: 0,
+    centerTitle: true,
+    automaticallyImplyLeading: false,
+    title: GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        height: ws.s(36),
+        padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
+        decoration: BoxDecoration(...),  // glass pill
+        child: Row(
+          children: [
+            Icon(Icons.arrow_back, size: ws.s(16)),
+            SizedBox(width: ws.s(6)),
+            Text('返回'),
+          ],
+        ),
+      ),
+    ),
+  ),
+  body: GlassBackground(
+    child: Column(
+      children: [
+        Expanded(child: WatchSafeArea(child: episodeList)),
+        if (multiSelect) _bottomActionBar,
+      ],
+    ),
+  ),
+);
+```
+
+## PlayerScreen Layout (v1.8.1+)
+
+Same AppBar pattern as EpisodesScreen. Content column with `mainAxisAlignment: MainAxisAlignment.center`:
+
+- Cover: `ws.capped(68, maxScale: 1.2)` with glass rounded corners
+- Title: 2-line max, `ws.fs(12)` font
+- Progress: `SliderTheme` with track height 3dp, width constrained to `min(ws.s(160), screenWidth*0.70)`
+- Time row: `ws.sp(10)` font, 8dp gap
+- Control row: -15s | play/pause | +15s — each button 10dp padded
 
 ## Glass Button Style
 
@@ -121,30 +216,38 @@ Container(
 )
 ```
 
-Compact mode (used in top-bars): height 30dp, icon 14sp, text 11sp, icon+text gap 4dp.
-Default mode: height ~36dp, icon 16sp, text 12sp.
+**AppBar glass pill:** height 36dp, padding horizontal ws.s(12), icon 16-18sp, text 12-13sp.
+
+## Web Debug Shell
+
+```dart
+class _WebDebugShell extends StatefulWidget {
+  // Wraps all 4 screens (Home, Episodes, Player, Settings) in:
+  // Center > ClipRRect(circular) > MediaQuery(size override) > SizedBox
+  // No bottom nav bar. Switch pages by editing _currentPage in source code.
+}
+```
+
+For accurate round-screen simulation, the `MediaQuery` override is **critical** — without it, `MediaQuery.of(context).size` returns the full browser window size (e.g. 1280×720) instead of the circular mask size (e.g. 577×577), causing arc equation coordinates to be wrong.
 
 ## Key Components
 
 ### PodcastTile
 - Params: title, author, imageUrl, tags, onTap, coverSize
-- Cover: `ws.capped(96, maxScale: 1.2)` on HomeScreen
+- Cover: `ws.capped(96, maxScale: 1.2)` on HomeScreen (single podcast)
+- Tags: purple glass pills, max 3 shown
 
 ### EpisodeTile
 - Params: title, duration, imageUrl, isDownloaded, isPlaying, isSelected, onTap, onLongPress
 - Cover 32dp (capped). Row layout.
 
-### SettingsAddBar
-- Two modes: compact (top-bar) and default
-- Compact: height 30dp, small icons/text
-- Default: height 46dp, larger icons/text
-
 ### HotPodcastList
 - Props: items, loading, error, subscribeError, showTitle, onItemTap, onSubscribe
-- Each item: cover(36dp, borderRadius 8dp), title(14sp), author(11sp), subscribe btn(40dp circle)
+- Each item: cover(42dp, borderRadius 8dp), title(15sp), author(11sp), subscribe btn(44dp circle)
 
 ### WatchSafeArea
-- Circular clip. Only wraps center content zone — top bar goes outside it.
+- Circular clip using `ClipPath` with circle equation.
+- Only wraps center content zone — top bar goes outside it.
 
 ### Cache Behavior
 - TopPodcastService: 24h memory + file cache. `invalidateCache()` for manual refresh.

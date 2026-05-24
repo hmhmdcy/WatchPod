@@ -10,39 +10,44 @@
 |-----------|-------|
 | Screen | 1.43" AMOLED round |
 | Resolution | 466 × 466 px |
-| DPI | 320 |
-| Usable dp | ~370 dp (466 / (320/160) ≈ 233pt × 2 = 370dp) |
-| Architecture | ARMv7 (32-bit) |
+| DPI (ADB) | 320 → density bucket xhdpi (2.0×) |
+| Logical dp (Flutter) | 466 / 2.0 = **233 dp** |
+| Architecture | ARMv7 (32-bit) — use armeabi-v7a APK |
+
+> ⚠️ **CORRECTION**: The old claim "~370 dp usable" was based on a flawed calculation.
+> Correct value from ADB: logical screen = 233×233 dp.
 
 ### WearScale Design Baseline
 
 - **Design base:** 280 dp (not the standard 360 dp)
-- **Rationale:** Huawei Watch 3's actual usable dp is ~370 dp. With base=280, ratio = 370/280 ≈ 1.32×, ensuring all UI elements (buttons 36dp → 47dp, icons 18sp → 24sp) are large enough for finger touch on a round screen.
-- **This is Option 2 (lower base value)** from the Hermes skill: change one constant, all `ws.s()`, `ws.sp()`, `ws.fs()` scale proportionally.
+- **Rationale:** Huawei Watch 3 logical dp = 233 dp. ratio = 233/280 ≈ 0.83. All elements render at 83% of design spec. This was chosen over base=180 (which made buttons too large) after user testing.
+- **One-line change:** `WearScale.base = 280` in `lib/widgets/wear_scale.dart` — all `ws.s()`, `ws.sp()`, `ws.fs()` scale proportionally.
 
-### Scaling Reference (at 370 dp / 320 DPI)
+### Scaling Reference (at 233 dp / 320 DPI)
 
-| Design value | Actual size | Use case |
-|-------------|-------------|----------|
-| 36 dp | ~47 dp | Top bar buttons (height) |
-| 18 sp | ~24 sp | Button icons |
-| 13 sp | ~17 sp | Tag chip / body text |
-| 15 sp | ~20 sp | List item title |
-| 11 sp | ~14.5 sp | Caption / meta text |
+| Design value | Actual size ratio | Use case |
+|-------------|------------------|----------|
+| 36 dp | ~30 dp (83%) | Top bar buttons (height) |
+| 18 sp | ~15 sp (83%) | Button icons |
+| 13 sp | ~10.8 sp | Tag chip / body text |
+| 15 sp | ~12.5 sp | List item title |
+| 11 sp | ~9.1 sp | Caption / meta text |
+| 96 dp (cover) | ~80 dp (capped+clamped) | HomeScreen podcast cover |
 
-## File Structure (18 files, ~3600 LOC)
+## File Structure (19 files, ~3600 LOC)
 
 ```
 lib/
 ├── main.dart                  # Entry: init 3 services, run WatchPodApp
+│                              # Web: _WebDebugShell with ClipRRect + MediaQuery override
 ├── models/
 │   ├── episode.dart
 │   └── podcast_subscription.dart
 ├── screens/
-|   ├── home_screen.dart       # Full-width content + right TagTrack arc track (~230 lines)
-|   ├── episodes_screen.dart   # Episode list: cache-first + silent RSS refresh
-|   ├── player_screen.dart     # Seekable Slider + play/pause + skip15
-|   └── settings_screen.dart   # Top-bar layout: compact add+refresh / full-height hot list (~350 lines)
+│   ├── home_screen.dart       # Stack layout: Positioned.fill content + right arc (~360 lines)
+│   ├── episodes_screen.dart   # Episode list: cache-first + silent RSS refresh
+│   ├── player_screen.dart     # Seekable Slider + play/pause + skip15
+│   └── settings_screen.dart   # AppBar centered (← 🔄 +) + full-height hot list (~350 lines)
 ├── services/
 │   ├── audio_service.dart
 │   ├── rss_service.dart
@@ -54,23 +59,21 @@ lib/
     ├── glass_components.dart
     ├── hot_podcast_list.dart  # List with showTitle prop
     ├── podcast_tile.dart
-    ├── settings_add_bar.dart  # compact + default modes
-    ├── settings_info_bar.dart # Unused since v1.4.0 (kept for reference)
-    ├── home_tag_track.dart    # CustomPaint arc track + GestureDetector tag selection
+    ├── home_tag_track.dart    # CustomPaint arc + OverflowBox full-screen + GestureDetector
     ├── watch_safe_area.dart
     ├── watch_layout.dart
-    └── wear_scale.dart
+    └── wear_scale.dart        # Base=280. ws.s/sp/fs/capped methods.
 ```
 
 ## Navigation Graph
 
 ```
 / → HomeScreen
-  → SettingsScreen (add + browse hot podcasts)  [PopScope swipe-back]
-    → _TagPickerPage (fullscreen tag selection)
+  → SettingsScreen (add + browse hot podcasts)  [AppBar centered back]
+    → TagPickerPage (fullscreen tag selection)
     → showEpisodePreview (bottom sheet)
-  → EpisodesScreen (tap podcast card)  [PopScope via WatchLayout]
-    → PlayerScreen (play episode)
+  → EpisodesScreen (tap podcast card)  [AppBar centered ← back]
+    → PlayerScreen (play episode)  [AppBar centered ← back]
 ```
 
 No deep linking, no named routes. Manual DI.
@@ -84,21 +87,91 @@ No deep linking, no named routes. Manual DI.
 | PlayerScreen | ListenableBuilder | AudioService (ChangeNotifier) |
 | SettingsScreen | setState | TopPodcastService auto-caches, no loading on cache hit |
 
-## Top-Bar Layout Architecture (v1.4.0+)
+## Layout Architecture
 
-All screens use the same pattern: **top action bar (48dp) + full-height content (Expanded)**.
+### HomeScreen — Stack + Right Arc Track (v1.8.1+)
 
+```dart
+Stack(
+  children: [
+    // Full-screen centered content
+    Positioned.fill(
+      child: WatchSafeArea(
+        child: _buildPodcastSection(ws),  // cover / PageView
+      ),
+    ),
+    // Right edge arc track (overlays on top)
+    Positioned.fill(                // ← full width for OverflowBox alignment
+      child: _buildTopBar(ws),      // → TagTrack
+    ),
+  ],
+)
 ```
-┌───────────────────────┐
-│  [tags/add/refresh]   │  ← Row / SizedBox(48dp). Outside WatchSafeArea.
-├───────────────────────┤
-│                       │
-│  Content (Expanded)   │  ← HomeScreen: WatchSafeArea wrap. Settings: plain.
-│                       │
-└───────────────────────┘
+
+### TagTrack — Frosted-Glass Arc Track
+
+- **Container:** `SizedBox(width:40, height:screenHeight)` — limits touch zone to right edge
+- **Arc painting:** `OverflowBox(minWidth:screenWidth)` extends `CustomPaint` to full screen
+- **Canvas coordinate origin:** (0,0) = screen (0,0) — **no offset translation**
+- **Arc formula:** `x = centerX + R*cos(θ)`, `y = centerY + R*sin(θ)`
+- **Angle range:** -45° to 45° (upper-right to lower-right, ~1/4 circle)
+- **Style:** 10dp stroke, `Color(0xB0FFFFFF)` (semi-transparent white), `StrokeCap.round`
+- **Frosted glass:** `MaskFilter.blur(BlurStyle.normal, 10)` on a wider (14dp) low-opacity (0.15) blur layer
+- **Tags:** ["全部"(null), ...widget.tags] — drag Y maps to tag via `asin((Y-centerY)/R)`
+- **Bottom zone:** 85%+ of arc → 2s hold triggers "添加订阅"
+- **Architecture (CRITICAL):** TagTrack's CustomPaint uses `OverflowBox` so the arc is drawn at true screen-global coordinates. This ensures **identical rendering on Web, emulator, and real hardware** — no coordinate translation bugs.
+
+### Web Debug — MediaQuery Override
+
+In `_WebDebugShell.build`:
+```dart
+ClipRRect(
+  borderRadius: BorderRadius.circular(watchSize/2),
+  child: MediaQuery(
+    data: MediaQuery.of(context).copyWith(
+      size: Size(watchSize, watchSize),  // ← override!
+    ),
+    child: SizedBox(
+      width: watchSize,
+      height: watchSize,
+      child: IndexedStack(...),  // HomeScreen + other pages
+    ),
+  ),
+)
+```
+This ensures `MediaQuery.of(context).size` in TagTrack returns the circular mask size (e.g. 577×577), NOT the full browser window (1280×720).
+
+### All Other Screens — AppBar Centered
+
+```dart
+Scaffold(
+  extendBodyBehindAppBar: true,
+  appBar: AppBar(
+    backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
+    scrolledUnderElevation: 0,
+    surfaceTintColor: Colors.transparent,
+    centerTitle: true,
+    automaticallyImplyLeading: false,
+    title: buttonsRow,  // ← centered, NOT in leading/actions
+  ),
+  body: GlassBackground(
+    child: Column(
+      children: [
+        Expanded(child: WatchSafeArea(child: content)),
+      ],
+    ),
+  ),
+);
 ```
 
-No bottom bars. No info footers.
+### Per-Screen Button Spec
+
+| Screen | Layout | Normal mode buttons | Multi-select |
+|--------|--------|-------------------|-------------|
+| HomeScreen | Stack + arc track | Arc track (-45°~45°, 10dp glass) + floating label bubbles | N/A |
+| SettingsScreen | AppBar centered | [←] [🔄] [+] — 3 glass pill buttons | N/A |
+| EpisodesScreen | AppBar centered | [← 返回] — pill-style button | [✕ 退出选择] |
+| PlayerScreen | AppBar centered | [← 返回] — pill-style button | N/A |
 
 ## Refresh Button Flow
 
