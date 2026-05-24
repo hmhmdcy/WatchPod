@@ -225,30 +225,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         canPop: true,
         child: GlassBackground(
           child: SafeArea(
-            child: Stack(
+            child: Column(
               children: [
-                // ── 热门播客列表（全屏）──
-                Positioned.fill(
-                  child: WatchSafeArea(
-                    child: HotPodcastList(
-                    items: _topPodcasts,
-                    loading: _loadingTop,
-                    error: _topPodcastsError,
-                    subscribeError: _error,
-                    showTitle: true,
-                    onItemTap: (item) => _previewPodcast(item),
-                    onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
-                  ),
-                  ),
-                ),
-
-                // ── 右上角操作按钮 ──
-                Positioned(
-                  top: ws.s(4),
-                  right: ws.s(4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                // ── 顶部居中操作栏 ──
+                SizedBox(
+                  height: ws.s(48),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // 返回按钮
                       GestureDetector(
@@ -269,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: ws.s(6)),
+                      SizedBox(width: ws.s(6)),
                       // 刷新按钮
                       GestureDetector(
                         onTap: _loadingTop
@@ -302,7 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: ws.s(6)),
+                      SizedBox(width: ws.s(6)),
                       // 添加订阅按钮（+）
                       GestureDetector(
                         onTap: _adding ? null : _showAddFeedDialog,
@@ -332,6 +315,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+
+                // ── 热门播客列表（剩余空间）──
+                Expanded(
+                  child: WatchSafeArea(
+                    child: HotPodcastList(
+                    items: _topPodcasts,
+                    loading: _loadingTop,
+                    error: _topPodcastsError,
+                    subscribeError: _error,
+                    showTitle: true,
+                    onItemTap: (item) => _previewPodcast(item),
+                    onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
+                  ),
                   ),
                 ),
               ],

@@ -174,14 +174,54 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
     final ws = WearScale.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: _selectionMode
+            ? GestureDetector(
+                onTap: _exitSelectionMode,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.close, size: 16, color: Colors.white70),
+                      SizedBox(width: 6),
+                      Text('退出选择', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    ],
+                  ),
+                ),
+              )
+            : GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_back, size: 16, color: Colors.white70),
+                      SizedBox(width: 6),
+                      Text('返回', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    ],
+                  ),
+                ),
+              ),
+      ),
       body: GlassBackground(
         child: Column(
           children: [
             Expanded(
-              child: Stack(
-                children: [
-                  // 剧集列表
-                  WatchSafeArea(
+              child: WatchSafeArea(
                     child: _loading
                         ? const Center(child: CircularProgressIndicator(color: Colors.white))
                         : _error != null
@@ -190,42 +230,6 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
                                 ? _buildEmpty()
                                 : _buildEpisodeList(),
                   ),
-                  // 右上角返回/关闭按钮
-                  Positioned(
-                    top: ws.s(4),
-                    right: ws.s(4),
-                    child: _selectionMode
-                        ? GestureDetector(
-                            onTap: _exitSelectionMode,
-                            child: Container(
-                              height: ws.s(36),
-                              width: ws.s(36),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(ws.s(14)),
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.close, size: 18, color: Colors.white70),
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              height: ws.s(36),
-                              width: ws.s(36),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(ws.s(14)),
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.arrow_back, size: 18, color: Colors.white70),
-                              ),
-                            ),
-                          ),
-                  ),
-                ],
-              ),
             ),
             // 底部操作栏（多选模式下显示）
             if (_selectionMode)

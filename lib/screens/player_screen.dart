@@ -24,11 +24,32 @@ class PlayerScreen extends StatelessWidget {
     final ws = WearScale.of(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.arrow_back, size: 16, color: Colors.white70),
+                SizedBox(width: 6),
+                Text('返回', style: TextStyle(fontSize: 12, color: Colors.white70)),
+              ],
+            ),
+          ),
+        ),
+      ),
       body: GlassBackground(
-        child: Stack(
-          children: [
-            // 播放器内容
-            Center(
+        child: Center(
               child: ListenableBuilder(
                 listenable: audioService,
                 builder: (context, _) {
@@ -175,36 +196,14 @@ class PlayerScreen extends StatelessWidget {
                               ),
                             ),
                           ],
-                        ),
-                        SizedBox(height: ws.s(16)),
+                ),
+                SizedBox(height: ws.s(16)),
                       ],
                     ),
                   );
                 },
               ),
             ),
-
-            // ── 右上角返回按钮 ──
-            Positioned(
-              top: ws.s(4),
-              right: ws.s(4),
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  height: ws.s(36),
-                  width: ws.s(36),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(ws.s(14)),
-                  ),
-                  child: Center(
-                    child: Icon(Icons.arrow_back, size: ws.s(18), color: Colors.white70),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
