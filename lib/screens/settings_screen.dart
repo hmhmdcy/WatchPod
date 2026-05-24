@@ -86,33 +86,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return AlertDialog(
           backgroundColor: const Color(0xFF1A1A2E),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(ws.s(16))),
-          title: Text('添加 RSS 订阅',
-              style: TextStyle(fontSize: ws.fs(14), color: Colors.white)),
+            borderRadius: BorderRadius.circular(ws.s(16)),
+          ),
+          title: Text(
+            '添加 RSS 订阅',
+            style: TextStyle(fontSize: ws.fs(14), color: Colors.white),
+          ),
           content: TextField(
             controller: controller,
             autofocus: true,
             style: TextStyle(fontSize: ws.sp(13), color: Colors.white),
             decoration: InputDecoration(
               hintText: '粘贴 RSS 链接',
-              hintStyle:
-                  TextStyle(fontSize: ws.sp(13), color: Colors.grey[500]),
+              hintStyle: TextStyle(
+                fontSize: ws.sp(13),
+                color: Colors.grey[500],
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(ws.s(10)),
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.2),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(ws.s(10)),
-                borderSide:
-                    BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.2),
+                ),
               ),
               focusedBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(10)),
                 borderSide: BorderSide(color: Color(0xFF6C63FF)),
               ),
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: ws.s(12), vertical: ws.s(10)),
+                horizontal: ws.s(12),
+                vertical: ws.s(10),
+              ),
             ),
           ),
           actions: [
@@ -122,8 +131,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: const Text('添加',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6C63FF))),
+              child: const Text(
+                '添加',
+                style: TextStyle(fontSize: 12, color: Color(0xFF6C63FF)),
+              ),
             ),
           ],
         );
@@ -154,7 +165,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       final suggested = PodcastSubscription.suggestTags(
-          result.podcast.title, result.podcast.description);
+        result.podcast.title,
+        result.podcast.description,
+      );
 
       if (mounted) {
         final tags = await _showTagPicker(result.podcast, suggested);
@@ -166,7 +179,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final taggedPodcast = result.podcast.copyWith(tags: tags);
         await widget.storageService.addSubscription(taggedPodcast);
         await widget.storageService.saveEpisodes(
-            taggedPodcast.id, result.episodes);
+          taggedPodcast.id,
+          result.episodes,
+        );
 
         if (mounted) {
           setState(() => _subscriptionCount++);
@@ -200,13 +215,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<List<String>?> _showTagPicker(
-      PodcastSubscription podcast, List<String> suggested) async {
+    PodcastSubscription podcast,
+    List<String> suggested,
+  ) async {
     return Navigator.push<List<String>>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) =>
-            _TagPickerPage(podcast: podcast, suggested: suggested),
+        builder: (_) => _TagPickerPage(podcast: podcast, suggested: suggested),
       ),
     );
   }
@@ -247,8 +263,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 child: Center(
-                  child: Icon(Icons.arrow_back,
-                      color: Colors.white70, size: ws.s(18)),
+                  child: Icon(
+                    Icons.arrow_back,
+                    color: Colors.white70,
+                    size: ws.s(18),
+                  ),
                 ),
               ),
             ),
@@ -277,11 +296,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: ws.s(14),
                           height: ws.s(14),
                           child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white54),
+                            strokeWidth: 2,
+                            color: Colors.white54,
+                          ),
                         )
-                      : Icon(Icons.refresh,
-                          color: Colors.white70, size: ws.s(18)),
+                      : Icon(
+                          Icons.refresh,
+                          color: Colors.white70,
+                          size: ws.s(18),
+                        ),
                 ),
               ),
             ),
@@ -306,11 +329,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: ws.s(14),
                           height: ws.s(14),
                           child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
-                      : Icon(Icons.add,
-                          color: Colors.white, size: ws.s(20)),
+                      : Icon(Icons.add, color: Colors.white, size: ws.s(20)),
                 ),
               ),
             ),
@@ -321,23 +344,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         canPop: true,
         child: GlassBackground(
           child: Column(
-              children: [
-                // ── 热门播客列表（剩余空间）──
-                Expanded(
+            children: [
+              // ── 热门播客列表（剩余空间）──
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: ws.s(12)),
                   child: WatchSafeArea(
                     child: HotPodcastList(
-                    items: _topPodcasts,
-                    loading: _loadingTop,
-                    error: _topPodcastsError,
-                    subscribeError: _error,
-                    showTitle: true,
-                    onItemTap: (item) => _previewPodcast(item),
-                    onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
-                  ),
+                      items: _topPodcasts,
+                      loading: _loadingTop,
+                      error: _topPodcastsError,
+                      subscribeError: _error,
+                      showTitle: true,
+                      onItemTap: (item) => _previewPodcast(item),
+                      onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -383,11 +409,14 @@ class _TagPickerPageState extends State<_TagPickerPage> {
             children: [
               Icon(Icons.close, size: ws.s(20), color: Colors.white),
               SizedBox(width: ws.s(6)),
-              Text('选择标签',
-                  style: TextStyle(
-                      fontSize: ws.fs(14),
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                '选择标签',
+                style: TextStyle(
+                  fontSize: ws.fs(14),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
@@ -398,12 +427,18 @@ class _TagPickerPageState extends State<_TagPickerPage> {
             children: [
               Padding(
                 padding: EdgeInsets.symmetric(
-                    horizontal: ws.s(16), vertical: ws.s(4)),
-                child: Text(widget.podcast.title,
-                    style: TextStyle(
-                        fontSize: ws.sp(12), color: Colors.grey[400]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                  horizontal: ws.s(16),
+                  vertical: ws.s(4),
+                ),
+                child: Text(
+                  widget.podcast.title,
+                  style: TextStyle(
+                    fontSize: ws.sp(12),
+                    color: Colors.grey[400],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               SizedBox(height: ws.s(4)),
               if (widget.suggested.isNotEmpty)
@@ -414,24 +449,34 @@ class _TagPickerPageState extends State<_TagPickerPage> {
                     runSpacing: ws.s(2),
                     alignment: WrapAlignment.center,
                     children: [
-                      Text('已推荐: ',
-                          style: TextStyle(
-                              fontSize: ws.sp(10),
-                              color: const Color(0xFF6C63FF))),
-                      ...widget.suggested.map((tag) => Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: ws.s(6), vertical: 1),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6C63FF)
-                                  .withValues(alpha: 0.15),
-                              borderRadius:
-                                  BorderRadius.circular(ws.s(6)),
+                      Text(
+                        '已推荐: ',
+                        style: TextStyle(
+                          fontSize: ws.sp(10),
+                          color: const Color(0xFF6C63FF),
+                        ),
+                      ),
+                      ...widget.suggested.map(
+                        (tag) => Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ws.s(6),
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF6C63FF,
+                            ).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(ws.s(6)),
+                          ),
+                          child: Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: ws.sp(9),
+                              color: const Color(0xFF6C63FF),
                             ),
-                            child: Text(tag,
-                                style: TextStyle(
-                                    fontSize: ws.sp(9),
-                                    color: const Color(0xFF6C63FF))),
-                          )),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -445,8 +490,7 @@ class _TagPickerPageState extends State<_TagPickerPage> {
                         spacing: ws.s(6),
                         runSpacing: ws.s(6),
                         alignment: WrapAlignment.center,
-                        children:
-                            PodcastSubscription.presetTags.map((tag) {
+                        children: PodcastSubscription.presetTags.map((tag) {
                           final isSelected = _selected.contains(tag);
                           return GestureDetector(
                             onTap: () => setState(() {
@@ -458,33 +502,33 @@ class _TagPickerPageState extends State<_TagPickerPage> {
                             }),
                             child: Container(
                               width: tagWidth,
-                              padding: EdgeInsets.symmetric(
-                                  vertical: ws.s(8)),
+                              padding: EdgeInsets.symmetric(vertical: ws.s(8)),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFF6C63FF)
-                                        .withValues(alpha: 0.4)
-                                    : Colors.white
-                                        .withValues(alpha: 0.08),
-                                borderRadius:
-                                    BorderRadius.circular(ws.s(14)),
+                                    ? const Color(
+                                        0xFF6C63FF,
+                                      ).withValues(alpha: 0.4)
+                                    : Colors.white.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(ws.s(14)),
                                 border: Border.all(
                                   color: isSelected
                                       ? const Color(0xFF6C63FF)
-                                      : Colors.white
-                                          .withValues(alpha: 0.1),
+                                      : Colors.white.withValues(alpha: 0.1),
                                 ),
                               ),
-                              child: Text(tag,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      fontSize: ws.sp(12),
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Colors.white70,
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal)),
+                              child: Text(
+                                tag,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: ws.sp(12),
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.white70,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
                             ),
                           );
                         }).toList(),
@@ -498,30 +542,27 @@ class _TagPickerPageState extends State<_TagPickerPage> {
                 child: GestureDetector(
                   onTap: () => Navigator.pop(context, _selected),
                   child: Container(
-                    padding:
-                        EdgeInsets.symmetric(vertical: ws.s(12)),
+                    padding: EdgeInsets.symmetric(vertical: ws.s(12)),
                     decoration: BoxDecoration(
                       color: _selected.isEmpty
                           ? Colors.grey.withValues(alpha: 0.2)
-                          : const Color(0xFF6C63FF)
-                              .withValues(alpha: 0.6),
-                      borderRadius:
-                          BorderRadius.circular(ws.s(22)),
+                          : const Color(0xFF6C63FF).withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(ws.s(22)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check,
-                            size: ws.s(16), color: Colors.white),
+                        Icon(Icons.check, size: ws.s(16), color: Colors.white),
                         SizedBox(width: ws.s(6)),
                         Text(
                           _selected.isEmpty
                               ? '跳过标签'
                               : '确定 (${_selected.length})',
                           style: TextStyle(
-                              fontSize: ws.sp(13),
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold),
+                            fontSize: ws.sp(13),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
