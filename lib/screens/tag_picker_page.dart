@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import '../models/podcast_subscription.dart';
 import '../widgets/glass_components.dart';
+import '../widgets/watch_screen.dart';
 import '../widgets/wear_scale.dart';
 
 /// 全屏标签选择页面
@@ -60,16 +61,20 @@ class _TagPickerPageState extends State<TagPickerPage> {
   @override
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F23),
-      body: GlassBackground(
-        child: SafeArea(
-          child: Center(
-            child: SizedBox(
-              width: ws.s(192),
-              child: Stack(
-                children: [
-                  // 内容层：标题 + 推荐标签 + 标签网格（可滚动）
+    return WatchScreen(
+      safeArea: true,
+      actions: [
+        TopAction(
+          child: Icon(Icons.close, size: ws.s(20), color: Colors.white),
+          onTap: () => Navigator.pop(context),
+        ),
+      ],
+      child: Center(
+        child: SizedBox(
+          width: ws.s(192),
+          child: Stack(
+            children: [
+              // 内容层：标题 + 推荐标签 + 标签网格（可滚动）
                   // Positioned.fill 让内容占满整个 Stack 垂直空间
                   Positioned.fill(
                     child: Padding(
@@ -198,15 +203,6 @@ class _TagPickerPageState extends State<TagPickerPage> {
                     ),
                   ),
                 ),
-                  // 顶部 ✕ 按钮
-                  TopActionBar(
-                    actions: [
-                      TopAction(
-                        child: Icon(Icons.close, size: ws.s(20), color: Colors.white),
-                        onTap: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
                   // 底部确认按钮 — 半透明毛玻璃，透出下方标签，暗示可滚动
                   Positioned(
                     left: 0, right: 0, bottom: ws.s(8),
@@ -258,9 +254,6 @@ class _TagPickerPageState extends State<TagPickerPage> {
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
+          ));
   }
 }

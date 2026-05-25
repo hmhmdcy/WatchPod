@@ -1,5 +1,22 @@
 # WatchPod Changelog
 
+## v1.9.5 — 2026-05-26
+
+### Added
+- **WatchScreen 统一页面骨架** (`lib/widgets/watch_screen.dart`):
+  - 封装 `Scaffold(transparent) + GlassBackground + Stack + TopActionBar + SafeArea` 为复用组件
+  - API：`WatchScreen(actions, safeArea, extendBody, child)` — 5 行替代原来 25+ 行样板代码
+
+### Changed
+- **SettingsScreen** — `WatchScreen` 替换 40 行重复骨架（`PopScope + GlassBackground + Stack + SafeArea + TopActionBar` → 2 行 `WatchScreen(safeArea: true, actions: [...])`)
+- **EpisodesScreen** — `WatchScreen` 替换 40 行重复骨架，行为不变（无 SafeArea)
+- **PlayerScreen** — `WatchScreen` 替换 45 行重复骨架，`safeArea: true` 自动包裹
+- **TagPickerPage** — `WatchScreen` 替换 25 行重复骨架，✕ 按钮移入 `actions:` 参数
+
+### Architecture
+- 所有 5 个页面统一骨架：`WatchScreen → GlassBackground → SafeArea(可选) → Stack → [Content + TopActionBar]`
+- 后续新增页面只需关注内容布局，骨架代码自动继承
+
 ## v1.9.4 — 2026-05-26
 
 ### Changed

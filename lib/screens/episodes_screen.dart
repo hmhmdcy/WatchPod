@@ -9,6 +9,7 @@ import '../services/storage_service.dart';
 import '../services/rss_service.dart';
 import '../widgets/episode_tile.dart';
 import '../widgets/glass_components.dart';
+import '../widgets/watch_screen.dart';
 import '../widgets/wear_scale.dart';
 import 'player_screen.dart';
 
@@ -190,93 +191,82 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   @override
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
-    return Scaffold(
-      body: GlassBackground(
-        child: Stack(
-          children: [
-            // 内容
-            Column(
-              children: [
-                // 顶部留空给 TopActionBar
-                SizedBox(height: ws.s(60)),
-                Expanded(
-                  child: _loading
-                      ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                      : _error != null
-                          ? _buildError()
-                          : _episodes.isEmpty
-                              ? _buildEmpty()
-                              : _buildEpisodeList(),
-                ),
-                // 底部操作栏（多选模式下显示）
-                if (_selectionMode)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: ws.s(16), vertical: ws.s(8)),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A2E).withValues(alpha: 0.95),
-                      border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _batchDownload,
-                            child: GlassContainer(
-                              blur: 6,
-                              tintColor: const Color(0xFF6C63FF).withValues(alpha: 0.2),
-                              borderRadius: 10,
-                              padding: EdgeInsets.symmetric(vertical: ws.s(10)),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.download, size: ws.s(16), color: const Color(0xFF6C63FF)),
-                                  SizedBox(width: ws.s(6)),
-                                  Text('下载', style: TextStyle(fontSize: ws.sp(12), color: const Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: ws.s(12)),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _batchDelete,
-                            child: GlassContainer(
-                              blur: 6,
-                              tintColor: Colors.red.withValues(alpha: 0.15),
-                              borderRadius: 10,
-                              padding: EdgeInsets.symmetric(vertical: ws.s(10)),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.delete_outline, size: ws.s(16), color: Colors.red),
-                                  SizedBox(width: ws.s(6)),
-                                  Text('删除', style: TextStyle(fontSize: ws.sp(12), color: Colors.red, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            // TopActionBar — 条件显示返回/关闭按钮
-            TopActionBar(
-              actions: [
-                TopAction(
-                  child: Icon(
-                    _selectionMode ? Icons.close : Icons.arrow_back,
-                    size: ws.s(18),
-                    color: Colors.white70,
-                  ),
-                  onTap: _selectionMode ? _exitSelectionMode : () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ],
+    return WatchScreen(
+      actions: [
+        TopAction(
+          child: Icon(
+            _selectionMode ? Icons.close : Icons.arrow_back,
+            size: ws.s(18),
+            color: Colors.white70,
+          ),
+          onTap: _selectionMode ? _exitSelectionMode : () => Navigator.pop(context),
         ),
+      ],
+      child: Column(
+        children: [
+          SizedBox(height: ws.s(60)),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                : _error != null
+                    ? _buildError()
+                    : _episodes.isEmpty
+                        ? _buildEmpty()
+                        : _buildEpisodeList(),
+          ),
+          // 底部操作栏（多选模式下显示）
+          if (_selectionMode)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: ws.s(16), vertical: ws.s(8)),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A2E).withValues(alpha: 0.95),
+                border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _batchDownload,
+                      child: GlassContainer(
+                        blur: 6,
+                        tintColor: const Color(0xFF6C63FF).withValues(alpha: 0.2),
+                        borderRadius: 10,
+                        padding: EdgeInsets.symmetric(vertical: ws.s(10)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.download, size: ws.s(16), color: const Color(0xFF6C63FF)),
+                            SizedBox(width: ws.s(6)),
+                            Text('下载', style: TextStyle(fontSize: ws.sp(12), color: const Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: ws.s(12)),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _batchDelete,
+                      child: GlassContainer(
+                        blur: 6,
+                        tintColor: Colors.red.withValues(alpha: 0.15),
+                        borderRadius: 10,
+                        padding: EdgeInsets.symmetric(vertical: ws.s(10)),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.delete_outline, size: ws.s(16), color: Colors.red),
+                            SizedBox(width: ws.s(6)),
+                            Text('删除', style: TextStyle(fontSize: ws.sp(12), color: Colors.red, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../services/top_podcast_service.dart';
 import '../models/podcast_subscription.dart';
 import '../models/episode.dart';
 import '../widgets/glass_components.dart';
+import '../widgets/watch_screen.dart';
 import '../widgets/wear_scale.dart';
 import '../widgets/hot_podcast_list.dart';
 import '../widgets/episode_preview_sheet.dart';
@@ -258,87 +259,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: PopScope(
-        canPop: true,
-        child: GlassBackground(
-          child: Stack(
-            children: [
-              // ── 内容部分（去掉 WatchSafeArea，改用 SafeArea + 卡片自适应 padding） ──
-              SafeArea(
-                child: Column(
-                  children: [
-                    SizedBox(height: ws.s(60)),
-                    // 热门播客标题
-                    Padding(
-                      padding: EdgeInsets.only(left: ws.s(24), bottom: ws.s(4)),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('🔥 苹果热门播客',
-                            style: TextStyle(
-                                fontSize: ws.sp(13),
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: ws.s(8)),
-                        child: HotPodcastList(
-                          items: _topPodcasts,
-                          loading: _loadingTop,
-                          error: _topPodcastsError,
-                          subscribeError: _error,
-                          showTitle: false,
-                          onItemTap: (item) => _previewPodcast(item),
-                          onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // ── 顶部三个按钮（悬浮在内容上） ──
-              TopActionBar(
-                actions: [
-                  TopAction(
-                    child: Icon(Icons.arrow_back, color: Colors.white70, size: ws.s(18)),
-                    onTap: () => Navigator.pop(context),
-                  ),
-                  TopAction(
-                    child: _loadingTop
-                        ? SizedBox(
-                            width: ws.s(14), height: ws.s(14),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white54,
-                            ),
-                          )
-                        : Icon(Icons.refresh, color: Colors.white70, size: ws.s(18)),
-                    onTap: _loadingTop
-                        ? null
-                        : () async {
-                            await _topService.invalidateCache();
-                            _loadTopPodcasts();
-                          },
-                  ),
-                  TopAction(
-                    child: _adding
-                        ? SizedBox(
-                            width: ws.s(14), height: ws.s(14),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white,
-                            ),
-                          )
-                        : Icon(Icons.add, color: Colors.white, size: ws.s(18)),
-                    onTap: _adding ? null : _showAddFeedDialog,
-                    brighter: true,
-                  ),
-                ],
-              ),
-            ],
-          ),
+    return WatchScreen(
+      actions: [
+        TopAction(
+          child: Icon(Icons.arrow_back, color: Colors.white70, size: ws.s(18)),
+          onTap: () => Navigator.pop(context),
         ),
+        TopAction(
+          child: _loadingTop
+              ? SizedBox(
+                  width: ws.s(14), height: ws.s(14),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white54,
+                  ),
+                )
+              : Icon(Icons.refresh, color: Colors.white70, size: ws.s(18)),
+          onTap: _loadingTop
+              ? null
+              : () async {
+                  await _topService.invalidateCache();
+                  _loadTopPodcasts();
+                },
+        ),
+        TopAction(
+          child: _adding
+              ? SizedBox(
+                  width: ws.s(14), height: ws.s(14),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white,
+                  ),
+                )
+              : Icon(Icons.add, color: Colors.white, size: ws.s(18)),
+          onTap: _adding ? null : _showAddFeedDialog,
+          brighter: true,
+        ),
+      ],
+      safeArea: true,
+      child: Column(
+        children: [
+          SizedBox(height: ws.s(60)),
+          // 热门播客标题
+          Padding(
+            padding: EdgeInsets.only(left: ws.s(24), bottom: ws.s(4)),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('🔥 苹果热门播客',
+                  style: TextStyle(
+                      fontSize: ws.sp(13),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold)),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: ws.s(8)),
+              child: HotPodcastList(
+                items: _topPodcasts,
+                loading: _loadingTop,
+                error: _topPodcastsError,
+                subscribeError: _error,
+                showTitle: false,
+                onItemTap: (item) => _previewPodcast(item),
+                onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
