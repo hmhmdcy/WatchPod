@@ -1,6 +1,93 @@
 # WatchPod Changelog
 
-## v1.7.0 — 2026-05-24
+## v1.8.4 — 2026-05-25
+
+### Changed
+- **TagTrack 标签气泡定位: 垂直跟随 → 弧线运动** — 气泡从 `Positioned(top: _dragY, right: 34)` 改为 `Positioned(top: _dragY, right: screenSize.width - _dragArcX + 29)`。`_dragArcX` 用圆方程 `cx + R*cos(θ)` 计算，气泡沿弧线滑条轨迹运动，不再是垂直上下移动。
+- **TagTrack 标签气泡样式轻量化** — padding 缩小 (10→8, 6→4)、字号缩小 (12sp→10sp)、透明度降低 (0.7→0.5)、去粗体改为 w500，避免抢主内容焦点。
+- **TagTrack 气泡间距优化** — 气泡右边缘与弧线左侧保持 24px 间隙（之前紧贴弧线导致拥挤感），视觉评估确认"更舒适"。
+
+### Fixed
+- **气泡与弧线重叠问题** — 之前用 `left: _dragArcX - 34` 导致气泡左边缘在弧线左侧但气泡宽度使内容重叠。改用 `right: screenSize.width - _dragArcX + 29`，气泡右边缘始终紧贴弧线左侧不重叠。
+- **残留 watchpod 进程清理** — `pkill -f` 在 shell 保护下可能遗漏进程，需用 `kill -9 <PID>` 逐个清理。
+
+### Added
+- **`_dragArcX` 状态变量** — `_TagTrackState` 新增 `_dragArcX` 字段，在 `_updateFromY()` 中用圆方程同步计算弧线点的 X 坐标，供气泡弧线定位使用。
+
+### Documentation
+- UI_COMPONENTS.md: 更新 TagTrack 架构图，加入气泡弧线定位描述
+- AGENTS.md: 更新 pitfall #18 加入气泡弧线定位和清理注意事项
+- CHANGELOG.md: 本次变更记录
+
+## v1.8.3 — 2026-05-25
+
+### Added
+- **Linux Desktop 调试环境** — 窗口尺寸改为 466×466（`linux/runner/my_application.cc`），去掉标题栏（`gtk_window_set_decorated(FALSE)`）
+- **Linux Desktop 圆形裁剪** — `_WebDebugShell` 改为 StatelessWidget，固定 `watchSize=466`，`ClipRRect` 圆形裁剪 + `MediaQuery` 覆盖
+- **`_LinuxDebugPages`** — 新增 `_LinuxDebugPages` StatefulWidget，四页导航（Home/Episodes/Player/Settings）供 Linux Desktop 调试用
+
+### Changed
+- **TagTrack GestureDetector** — 加上 `behavior: HitTestBehavior.translucent`，扩大触摸区域命中范围
+- **`_WebDebugShell`** — 从 `StatefulWidget` 重构为 `StatelessWidget`，由新 `_LinuxDebugPages` 管理状态
+
+## v1.8.2 — 2026-05-25
+
+### Fixed
+- **TagTrack arc slider completely non-interactive** — Root cause: `TagTrack.build()` had no `GestureDetector` at all. The arc was drawn but no touch/gesture handlers were registered, so vertical drag, tap, and long-press all had zero effect. Fixed by adding a `GestureDetector` layer (`onVerticalDragStart`/`onVerticalDragUpdate`/`onVerticalDragEnd`/`onTapUp`) between the arc CustomPaint and the label overlay, using `SizedBox.expand()` as the gesture target.
+
+- **HomeScreen: TagTrack touch area clipped by SafeArea on round screens** — Root cause: TagTrack was placed inside `SafeArea`, which on a round screen (Huawei Watch 3) adds padding to all four edges. This shifted the 40dp touch zone away from the screen right edge, making the arc unreachable. Fixed by restructuring `HomeScreen.build()` layout from `SafeArea → Stack [content, TagTrack]` to `Stack [SafeArea → content, TagTrack (outside SafeArea)]`, ensuring TagTrack's gesture region reaches the screen edge.
+
+- **Cover tap unresponsive on round screens** — TagTrack's `Positioned.fill` was in the same `SafeArea`-wrapped `Stack` as the content, causing layout inconsistencies. The SafeArea separation fix also resolved this: content inside `WatchSafeArea` is no longer overlapped by SafeArea padding on the circular display.
+
+### Changed
+- **HomeScreen layout: SafeArea scope restricted** — `SafeArea` now only wraps the content area (`_buildPodcastSection`), not the TagTrack. The outer layer becomes `GlassBackground → Stack [SafeArea → content, TagTrack]`.
+
+### Cleanup
+- Removed unused `_ArcShape` clipper (legacy from right-panel era)
+- Removed unused `_allTagItems` getter
+- Removed unused `_openPlayer` method
+- Removed unused `_selectTag` method (had logic bug, was never called)
+- Removed unused `_screenSize` field from `_TagTrackState`
+
+## v1.8.1 — 2026-05-25
+
+### Added
+- `ArcLinePainter` (`lib/widgets/arc_line_painter.dart`) — CustomPaint arc drawn with circle equation on full screen, hugging right circular edge exactly from top-right (-90°) to bottom-right (90°). Uses global screen coordinates via `Positioned.fill(left: -N)` extension.
+- `OverflowBox` full-screen arc painting — `CustomPaint` now uses `OverflowBox` to paint outside TagTrack's 40dp container, ensuring canvas origin (0,0) = screen (0,0) for consistent rendering across Web, emulator, and real device.
+- Frosted glass arc effect — `MaskFilter.blur` blur layer under the semi-transparent white stroke for a frosted glass appearance.
+- Web debug: `MediaQuery` override in `_WebDebugShell` — wraps child screens with `MediaQuery(data: copyWith(size: Size(watchSize, watchSize)))` so child widgets read the correct circular mask size instead of full browser dimensions.
+
+### Changed
+- **HomeScreen layout: Row → Stack for centered content** — Content (WatchSafeArea) now uses `Positioned.fill` in a Stack instead of `Expanded` in a Row. This ensures the podcast cover is truly centered on round screens, unaffected by the 24dp right-side TagTrack zone.
+- **TagTrack arc coordinates: global → OverflowBox** — Arc is drawn using the raw circle equation `(centerX + R*cos(θ), centerY + R*sin(θ))` on a full-screen Canvas. No more offset-based coordinate translation. This eliminates the earlier bug where `MediaQuery` returned browser size (1280px) on Web, causing arc to render at wrong coordinates.
+- **Arc length: full right semicircle → half length (-45° to 45°)** — Reduced from -90°~90° (full right semicircle) to -45°~45° per user feedback.
+- **Arc inset: 2dp → 0dp** — Arc now sits directly on the circular edge with no inset, matching user's "紧贴圆边" requirement.
+- **Arc stroke: 10dp, semi-transparent white + blur** — Frosted glass look with `MaskFilter.blur(BlurStyle.normal, 10)`.
+
+### Fixed
+- **Arc invisible on Web** — Root cause: `MediaQuery.of(context).size` returned full browser width (1280px) when Flutter was rendered inside a 577px circular ClipRRect mask. The circle equation computed arc points far from the visible mask area. Fixed by overriding `MediaQuery` in `_WebDebugShell` and using `OverflowBox` for the CustomPaint canvas.
+- **Cover off-center** — Root cause: `Row(children: [Expanded(...), SizedBox(width:24, TagTrack)])` offset the geometric center by 12dp. Fixed by using `Stack(children: [Positioned.fill(WatchSafeArea), Positioned(right:0, TagTrack)])`.
+
+## v1.8.0 — 2026-05-24
+
+### Changed
+- **HomeScreen: right-side panel → arc track** — Replaced the entire right-side arched panel (`ClipPath` + button list) with `TagTrack`, a tight arc track (3dp) glued to the right circular screen edge. Finger touch reveals a slider dot + tag label bubble; drag vertically to switch tags; hover at bottom for 2s triggers "add subscription".
+- **HomeScreen layout: row split → full width + arc track** — Content area now occupies full `Expanded` width, with only a 24dp touch zone on the right for the arc track. No more 1/4 right panel.
+- **Web debug shell: removed bottom nav bar** — kIsWeb `_WebDebugShell` no longer shows the "首页/节目/播放/设置" bottom bar, making Web screenshots closer to actual watch display.
+
+### Removed
+- `_ArcShape` clipper (no longer needed after right panel removal)
+- `_allTagItems` / `_selectTag` / `_openPlayer` methods (old button-based tag filter removed)
+- Right panel container with ClipPath, GlassBackground, button list
+
+### Added
+- `TagTrack` widget (`lib/widgets/home_tag_track.dart`) — CustomPaint arc track, GestureDetector vertical drag, label bubble overlay, 2s bottom hover to add subscription.
+
+### Documentation
+- AGENTS.md: Added TagTrack cross-ref, updated HomeScreen description, added Web debug shell note
+- ARCHITECTURE.md: Added `home_tag_track.dart` to file structure, updated home_screen description
+- UI_COMPONENTS.md: Replaced HomeScreen layout diagram with arc track version, added TagTrack section
+- .gitignore: Added screenshot_*.png pattern to prevent local test screenshots from being committed
 
 ### Changed
 - **WearScale base: 360 → 280** — Huawei Watch 3 has ~370 dp usable (466×466 px @ 320 DPI). With base=280, ratio ≈ 1.32×, ensuring buttons (36→47dp), icons (18→24sp) and all elements are large enough for finger touch. This is a one-line change that globally scales all `ws.s()`, `ws.sp()`, `ws.fs()` calls. See ARCHITECTURE.md for device specs.

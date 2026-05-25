@@ -1,11 +1,12 @@
 # WatchPod — Agent Context
 
-> DEVICE: Wear OS smartwatch (round, 360x360 ~ 466x466)
-> PRIMARY TARGET: Huawei Watch 3 (466×466 px, 320 DPI, ~370 dp usable)
-> SDK: Flutter 3.44 / Dart 3.12 / Android SDK 35+36
-> PACKAGE: com.watchpod.watchpod
-> TARGET: Release APK for ARMv7 (Huawei Watch 3), ARM64. Debug for x86_64 (emulator)
-> WEARSCALE BASE: 280 dp (not standard 360 dp). See ARCHITECTURE.md for rationale.
+|> DEVICE: Wear OS smartwatch (round, 360x360 ~ 466x466) / Linux Desktop 466×466 circular debug shell
+|> PRIMARY TARGET: Huawei Watch 3 (466×466 px, 320 DPI, ~233 dp logical)
+|> SDK: Flutter 3.44 / Dart 3.12 / Android SDK 35+36
+|> PACKAGE: com.watchpod.watchpod
+|> TARGET: Release APK for ARMv7 (Huawei Watch 3), ARM64. Debug for x86_64 (emulator)
+|> WEARSCALE BASE: 280 dp (not standard 360 dp). See ARCHITECTURE.md for rationale.
+|> LINUX DEBUG: flutter build linux --debug → ./build/linux/x64/debug/bundle/watchpod (466×466, undecorated, circular ClipRRect). Screenshot with xwd, not scrot. Cleanup: pkill -f 'watchpod.*linux'
 
 ## TRIGGER CONDITIONS
 
@@ -17,13 +18,16 @@ WHEN task involves:
 - **version tracking** → read CHANGELOG.md, update it after changes
 - **environment config / install** → log to ~/.hermes/deployment-log/
 - **screen adapt / layout fix** → see WearScale in lib/widgets/wear_scale.dart
+- **TagTrack arc slider touch issues** → read docs/KNOWN_BUGS.md (已归档，详见 CHANGELOG.md v1.8.2 Fixed)
 
 ## KEY CROSS-REFERENCES
 
-- **watchpod-ui skill**: Contains the complete layout specification for all screens. Load this FIRST before any UI work. It encodes the top-bar + full-content pattern, WearScale usage rules, three-zone history (don't revert), and all current constraints.
-- **WearScale**: Adaptive sizing system. `WearScale.of(context).sp(12)` scales 12px to fit screens. **Base is 280 dp** (set for Huawei Watch 3, which has ~370 dp usable). All hardcoded sizes must use this.
-- **HomeScreen**: Top-bar layout: tag scroll row + "add" button in one line (48dp). Below: full-height podcast cover / empty state.
-- **SettingsScreen**: Top-bar layout: compact "add subscription" button + refresh button (48dp). Below: full-height hot podcast list. No info bar.
+- **watchpod-ui skill**: Contains the complete layout specification for all screens. Load this FIRST before any UI work. It encodes the top-bar + full-content pattern, WearScale usage rules, arc track spec, and all current constraints.
+- **WearScale**: Adaptive sizing system. `WearScale.of(context).sp(12)` scales 12px to fit screens. **Base is 280 dp**. All hardcoded sizes must use this.
+- **TagTrack** (`lib/widgets/home_tag_track.dart`): Frosted-glass arc track glued to the right circular screen edge. CustomPaint arc (10dp, alpha ~0.69), OverflowBox full-screen canvas, GestureDetector vertical drag for tag switching, 2s bottom hover to add subscription. Uses circle equation `(centerX + R*cos(θ), centerY + R*sin(θ))` from -45° to 45°. **v1.8.4: 标签气泡沿弧线运动** — `_dragArcX` 用圆方程同步计算，气泡右边缘紧贴弧线左侧 (24px 间隙)，轻量化样式 (10sp, alpha 0.5, w500)。Replaces the old right-side panel and thin arc line.
+- **HomeScreen**: `GlassBackground → Stack [SafeArea → WatchSafeArea(内容), TagTrack(outside SafeArea)]`. Full-width centered content + right-side arc track overlay. TagTrack in outermost Stack to avoid SafeArea padding clipping touch zone. See pitfall #15.
+- **Web debug** (`main.dart` `_WebDebugShell`): Wraps screens in `ClipRRect(circular)` + `MediaQuery(size: Size(watchSize, watchSize))` override so child widgets read correct circular dimensions on Web. No bottom nav bar.
+- **SettingsScreen**: AppBar centered — 3 glass icon buttons (←, 🔄, +) in AppBar.title. Below: full-height hot podcast list. No info bar.
 - **TopPodcastService**: `lib/services/top_podcast_service.dart`. 24h memory+file cache. `getTopPodcasts()` → iTunes RSS. `resolveFeedUrls()` → iTunes lookup.
 - **HotPodcastList**: `lib/widgets/hot_podcast_list.dart`. Cover(42dp) + title(15sp) + subscribe(44dp). Optional `showTitle` flag.
 - **EpisodesScreen**: Uses direct Scaffold (NOT WatchLayout). Only a centered back arrow (←) in AppBar title slot. Multi-select mode switches to close button. Cache-first: shows cached episodes immediately, silently refreshes RSS. **CRITICAL: Do NOT wrap in WatchLayout** — the `showAppBar: false` + `extendBodyBehindAppBar: true` combo shifts content off-screen on round hardware.
@@ -36,11 +40,16 @@ WHEN task involves:
 3. **OOM cascade**: On 4GB WSL, Gradle OOM kills systemd → kills Gateway → kills mihomo proxy → all network requests fail. Fix: `export GRADLE_OPTS="-Xmx512m"`, kill stale daemons.
 4. **Gradle daemon lock**: `flutter build` may hang on daemon lock after OOM/interrupt. Fix: `flutter clean` + specific PID kill.
 5. **mihomo proxy**: Proxy at `127.0.0.1:7890`. API at `127.0.0.1:9090`. Must be running before network ops.
-6. **Layout clipping on round screens**: WatchSafeArea clips content to a circle. Top action bars must be OUTSIDE WatchSafeArea.
-7. **EpisodesScreen first load**: No cache on first open → must wait for RSS network fetch. Subsequent opens show cached data instantly.
-8. **Build approval required**: Do NOT build APK without user confirmation. Also required before pushing to GitHub.
-9. **Git commit before every build**: Before running `flutter build apk --release`, always `git add -A && git commit -m "..."` with a descriptive English commit message summarizing all changes since last commit. Update CHANGELOG.md first if there are significant features or breaking changes. This ensures every APK is traceable to a specific commit for version rollback.
-10. **All action buttons at top-center, NOT sides**: Round screens clip corners. Use `centerTitle: true` + `automaticallyImplyLeading: false` on every AppBar. Buttons in `leading` or `actions` are invisible on real hardware.
-11. **Do NOT refactor working screens into WatchLayout**: `WatchLayout(showAppBar: false)` with `extendBodyBehindAppBar: true` shifts content off-screen. Keep EpisodesScreen as direct Scaffold.
-12. **WatchSafeArea wraps center zone only**: Every scrollable/list content area should use WatchSafeArea (HomeScreen cover, EpisodesScreen list, PlayerScreen controls, SettingsScreen hot list). Top/bottom bars stay outside.
-13. **WearScale base is 280 not 360**: Huawei Watch 3 has ~370 dp usable. With base=280, the ratio is 370/280 ≈ 1.32×. This ensures buttons (36dp → 47dp), icons (18sp → 24sp), and text are large enough for finger touch. When adapting for other devices, re-check actual dp and adjust if needed.
+6. **Build/Git approval required**: Do NOT build APK or push to GitHub without user confirmation. Ask before both.
+7. **Git commit before every build**: Always update CHANGELOG.md first, then `git add <files> && git commit` before `flutter build`.
+8. **All action buttons at top-center, NOT sides**: Round screens clip corners. Use `centerTitle: true` + `automaticallyImplyLeading: false` on every AppBar. Buttons in `leading` or `actions` are invisible on real hardware.
+9. **Do NOT refactor working screens into WatchLayout**: `WatchLayout(showAppBar: false)` with `extendBodyBehindAppBar: true` shifts content off-screen. Keep EpisodesScreen as direct Scaffold.
+10. **WatchSafeArea wraps center zone only**: Every scrollable/list content area should use WatchSafeArea. Top/bottom bars stay outside.
+11. **WearScale base is 280 not 360**: Huawei Watch 3 has ~233 dp logical screen. With base=280, the ratio is 233/280 ≈ 0.83× (elements shrink to 83%). **NOT** 1.32× — the old "~370 dp usable" was a calculation error. Correct logical dp from ADB: 466px / 2.0 (320dpi → xhdpi) = 233 dp.
+12. **Arc track invisible on Web (v1.8.0 bug fix)**: Root cause: `MediaQuery.of(context).size` returned full browser width, not the circular mask size. Fixed by (a) `MediaQuery` override in `_WebDebugShell` with `copyWith(size: Size(watchSize, watchSize))`, (b) `OverflowBox` in TagTrack to paint on full-screen canvas at global coordinates.
+13. **Arc coordinate system**: TagTrack's `CustomPaint` uses `OverflowBox` to fill the entire screen. Canvas origin (0,0) = screen (0,0). Arc points computed directly as `(centerX + R*cos(θ), centerY + R*sin(θ))` — no offset translation needed. This ensures identical rendering on Web, emulator, and real device.
+14. **TagTrack must have GestureDetector (v1.8.2)**: The arc is purely visual without a gesture handler. `TagTrack.build()` must always include a `GestureDetector` with `onVerticalDragStart/Update/End` and `onTapUp`. Without it, drag/tap on the arc has zero effect.
+15. **TagTrack must be outside SafeArea (v1.8.2)**: On round screens, `SafeArea` adds padding that shifts the 40dp touch zone away from the screen right edge. In `HomeScreen.build()`, TagTrack's `Positioned.fill` must be in the outer `Stack` (outside `SafeArea`), not nested inside it.
+16. **Linux Desktop: xwd NOT scrot/ffmpeg (v1.8.3)**: In WSL2/WSLg, standard screenshot tools capture WSL-internal display (blank/black). Use `xwd` to read pixels from X11 shared memory directly. Workflow: `xdotool search --name watchpod` → `xwd -id <ID> -out /tmp/wp.xwd` → `convert /tmp/wp.xwd /tmp/wp.png` → `vision_analyze`.
+17. **Linux Desktop: cleanup after use (v1.8.3)**: Always run `pkill -f 'watchpod.*linux'` after debugging. Leftover processes accumulate and consume GPU/CPU resources. The 466×466 undecorated window persists on the Windows desktop until killed. **v1.8.4:** `pkill -f` may miss processes under shell protection. Use `kill -9 <PID>` with explicit PID list when `pkill` leaves survivors.
+18. **标签气泡弧线定位 (v1.8.4)**: 气泡 `Positioned(top: _dragY, right: screenSize.width - _dragArcX + 29)` 中 `_dragArcX` 在 `_updateFromY()` 中用圆方程 `cx + R*cos(θ)` 同步计算。**不要直接用 `left: _dragArcX - N`** —— 气泡有动态宽度，用 `left` 会让气泡内容与弧线重叠。必须用 `right` 从屏幕右边缘算，确保气泡右边缘紧贴弧线左侧。气泡样式已轻量化（10sp, alpha 0.5），不要改回 12sp/bold。

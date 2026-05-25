@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/storage_service.dart';
 import '../services/rss_service.dart';
 import '../services/top_podcast_service.dart';
@@ -53,6 +54,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadTopPodcasts() async {
+    if (kIsWeb) {
+      _topPodcasts = [
+        TopPodcastItem(name: '科技早知道', author: '硅谷徐老师', coverUrl: 'https://picsum.photos/seed/pod1/200/200', lookupId: '1', feedUrl: 'https://example.com/feed1.xml', summary: '聚焦科技前沿，解读行业动态'),
+        TopPodcastItem(name: '忽左忽右', author: 'JustPod', coverUrl: 'https://picsum.photos/seed/pod2/200/200', lookupId: '2', feedUrl: 'https://example.com/feed2.xml', summary: '文化沙龙类节目'),
+        TopPodcastItem(name: '故事FM', author: '寇爱哲', coverUrl: 'https://picsum.photos/seed/pod3/200/200', lookupId: '3', feedUrl: 'https://example.com/feed3.xml', summary: '用你的声音，讲述你的故事'),
+        TopPodcastItem(name: '随机波动', author: '傅适野', coverUrl: 'https://picsum.photos/seed/pod4/200/200', lookupId: '4', feedUrl: 'https://example.com/feed4.xml', summary: '泛文化类播客'),
+        TopPodcastItem(name: '不合时宜', author: '王磬', coverUrl: 'https://picsum.photos/seed/pod5/200/200', lookupId: '5', feedUrl: 'https://example.com/feed5.xml', summary: '一档由年轻人参与制作的播客'),
+      ];
+      setState(() => _loadingTop = false);
+      return;
+    }
     // 先返回缓存（不显示 loading，太快了用户看不到）
     try {
       final cacheDir = await widget.storageService.localPath;

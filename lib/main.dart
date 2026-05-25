@@ -1,8 +1,16 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'services/audio_service.dart';
 import 'services/storage_service.dart';
 import 'services/rss_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/episodes_screen.dart';
+import 'screens/player_screen.dart';
+import 'models/podcast_subscription.dart';
+import 'models/episode.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,11 +69,111 @@ class WatchPodApp extends StatelessWidget {
           trackHeight: 3,
         ),
       ),
-      home: HomeScreen(
-        audioService: audioService,
-        storageService: storageService,
-        rssService: rssService,
+      home: (kIsWeb || Platform.isLinux)
+          ? _WebDebugShell(
+              audioService: audioService,
+              storageService: storageService,
+              rssService: rssService,
+            )
+          : HomeScreen(
+              audioService: audioService,
+              storageService: storageService,
+              rssService: rssService,
+            ),
+    );
+  }
+}
+
+/// Web 调试外壳：底部导航切换四个页面，方便视觉检查
+/// Linux Desktop 调试外壳：固定 466×466 圆形窗口模拟 Huawei Watch 3
+class _WebDebugShell extends StatelessWidget {
+  final AudioService audioService;
+  final StorageService storageService;
+  final RssService rssService;
+
+  const _WebDebugShell({
+    required this.audioService,
+    required this.storageService,
+    required this.rssService,
+  });
+
+  static const double watchSize = 466;
+
+  @override
+  Widget build(BuildContext context) {
+    final clipRadius = watchSize / 2;
+
+    return Scaffold(
+      body: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(clipRadius),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              size: const Size(watchSize, watchSize),
+            ),
+            child: SizedBox(
+              width: watchSize,
+              height: watchSize,
+              child: _LinuxDebugPages(
+                audioService: audioService,
+                storageService: storageService,
+                rssService: rssService,
+              ),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+}
+
+/// Linux Desktop 四页导航：Home / Episodes / Player / Settings
+class _LinuxDebugPages extends StatefulWidget {
+  final AudioService audioService;
+  final StorageService storageService;
+  final RssService rssService;
+
+  const _LinuxDebugPages({
+    required this.audioService,
+    required this.storageService,
+    required this.rssService,
+  });
+
+  @override
+  State<_LinuxDebugPages> createState() => _LinuxDebugPagesState();
+}
+
+class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
+  int _currentPage = 0;
+
+  static final _mockPodcast = PodcastSubscription(
+    id: 'mock-1',
+    title: '科技早知道',
+    author: '硅谷徐老师',
+    feedUrl: 'https://example.com/feed1.xml',
+    imageUrl: 'https://picsum.photos/seed/pod1/200/200',
+    tags: ['科技', '中文'],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return IndexedStack(
+      index: _currentPage,
+      children: [
+        HomeScreen(
+          audioService: widget.audioService,
+          storageService: widget.storageService,
+          rssService: widget.rssService,
+        ),
+        EpisodesScreen(
+          podcast: _mockPodcast,
+          audioService: widget.audioService,
+          storageService: widget.storageService,
+          rssService: widget.rssService,
+        ),
+        PlayerScreen(audioService: widget.audioService),
+        SettingsScreen(storageService: widget.storageService),
+      ],
     );
   }
 }

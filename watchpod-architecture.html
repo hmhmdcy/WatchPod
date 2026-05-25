@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WatchPod Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #020617;
+      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    .container { max-width: 1100px; width: 100%; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .pulse-dot {
+      width: 12px; height: 12px;
+      background: #22d3ee;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    h1 { font-size: 24px; font-weight: 700; color: #f1f5f9; }
+    .subtitle { color: #64748b; font-size: 12px; margin-bottom: 24px; }
+
+    /* SVG Card */
+    .diagram-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 4px;
+      overflow-x: auto;
+      margin-bottom: 24px;
+    }
+
+    /* Info Cards */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 768px) { .cards-grid { grid-template-columns: 1fr; } }
+    .card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .card-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-header h3 { font-size: 13px; color: #f1f5f9; }
+    .card ul { list-style: none; }
+    .card li { font-size: 11px; color: #94a3b8; padding: 3px 0; line-height: 1.5; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-size: 10px;
+      color: #475569;
+      border-top: 1px solid #1e293b;
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="pulse-dot"></div>
+    <h1>WatchPod Architecture</h1>
+  </div>
+  <div class="subtitle">Wear OS Podcast Aggregator — Huawei Watch 3 · Flutter 3.44 · Dart 3.12</div>
+
+  <!-- Diagram -->
+  <div class="diagram-card">
+    <svg width="1040" height="820" viewBox="0 0 1040 820" xmlns="http://www.w3.org/2000/svg">
+      <!-- Grid -->
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+        </pattern>
+        <!-- Arrowhead markers -->
+        <marker id="arrow-cyan" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#22d3ee"/>
+        </marker>
+        <marker id="arrow-emerald" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#34d399"/>
+        </marker>
+        <marker id="arrow-violet" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/>
+        </marker>
+        <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#fb923c"/>
+        </marker>
+        <marker id="arrow-slate" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+        </marker>
+        <!-- Dashed arrow -->
+        <marker id="arrow-rose" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#fb7185"/>
+        </marker>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)"/>
+      <rect width="100%" height="100%" fill="none" stroke="#1e293b" stroke-width="1"/>
+
+      <!-- ==================== BOUNDARIES ==================== -->
+
+      <!-- Wear OS Device Boundary -->
+      <rect x="30" y="30" width="500" height="420" rx="12" fill="none" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.35"/>
+      <text x="45" y="52" fill="#22d3ee" font-size="9" font-weight="600" opacity="0.7">⌚ WEAR OS DEVICE (Huawei Watch 3)</text>
+
+      <!-- External Services Boundary -->
+      <rect x="570" y="30" width="440" height="660" rx="12" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.35"/>
+      <text x="585" y="52" fill="#94a3b8" font-size="9" font-weight="600" opacity="0.7">🌐 EXTERNAL SERVICES</text>
+
+      <!-- Flutter Framework Boundary -->
+      <rect x="45" y="70" width="470" height="130" rx="8" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,3" opacity="0.2"/>
+      <text x="55" y="88" fill="#22d3ee" font-size="8" opacity="0.5">Flutter Engine</text>
+
+      <!-- ==================== ARROWS (drawn first -> behind) ==================== -->
+
+      <!-- Main -> Services: init -->
+      <line x1="280" y1="225" x2="280" y2="255" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+
+      <!-- Services -> External Net calls -->
+      <polyline points="145,370 145,410 640,410 640,120" fill="none" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-orange)" stroke-dasharray="4,3"/>
+      <polyline points="280,370 280,430 680,430 680,160" fill="none" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-orange)" stroke-dasharray="4,3"/>
+      <polyline points="415,370 415,450 610,450 610,200" fill="none" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-orange)" stroke-dasharray="4,3"/>
+
+      <!-- Screens -> Services: read/write -->
+      <line x1="145" y1="510" x2="145" y2="370" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+      <line x1="280" y1="510" x2="280" y2="370" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+      <line x1="415" y1="510" x2="415" y2="370" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+
+      <!-- Services -> Storage -->
+      <line x1="145" y1="260" x2="145" y2="315" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+      <line x1="280" y1="260" x2="280" y2="315" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+      <line x1="415" y1="260" x2="415" y2="315" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+
+      <!-- Player -> AudioService -> just_audio -->
+      <line x1="540" y1="500" x2="600" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow-slate)" stroke-dasharray="3,2"/>
+      <text x="605" y="504" fill="#94a3b8" font-size="7">just_audio</text>
+
+      <!-- Navigation arrows between screens -->
+      <polyline points="145,560 145,580 280,580" fill="none" stroke="#22d3ee" stroke-width="1" marker-end="url(#arrow-cyan)"/>
+      <text x="175" y="592" fill="#22d3ee" font-size="7" opacity="0.6">push</text>
+      <polyline points="280,560 280,580 415,580" fill="none" stroke="#22d3ee" stroke-width="1" marker-end="url(#arrow-cyan)"/>
+      <text x="310" y="592" fill="#22d3ee" font-size="7" opacity="0.6">push</text>
+      <polyline points="415,560 415,580 540,580" fill="none" stroke="#22d3ee" stroke-width="1" marker-end="url(#arrow-cyan)"/>
+      <text x="445" y="592" fill="#22d3ee" font-size="7" opacity="0.6">push</text>
+
+      <!-- ==================== MAIN ENTRY ==================== -->
+
+      <!-- main.dart -->
+      <rect x="160" y="200" width="240" height="28" rx="5" fill="rgba(8, 51, 68, 0.6)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="280" y="218" fill="#22d3ee" font-size="10" text-anchor="middle" font-weight="600">main.dart (entry point)</text>
+
+      <!-- WatchPodApp (MaterialApp) -->
+      <rect x="160" y="235" width="240" height="22" rx="4" fill="rgba(8, 51, 68, 0.35)" stroke="#22d3ee" stroke-width="1"/>
+      <text x="280" y="250" fill="#22d3ee" font-size="8" text-anchor="middle" opacity="0.8">WatchPodApp / MaterialApp</text>
+
+      <!-- ==================== LAYER 1: SERVICES ==================== -->
+
+      <text x="65" y="290" fill="#34d399" font-size="10" font-weight="600">🗄️ Services</text>
+
+      <!-- StorageService -->
+      <rect x="55" y="300" width="180" height="40" rx="6" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
+      <text x="145" y="318" fill="#34d399" font-size="10" text-anchor="middle" font-weight="600">StorageService</text>
+      <text x="145" y="332" fill="#6ee7b7" font-size="7" text-anchor="middle" opacity="0.7">JSON read/write · subscriptions.json</text>
+
+      <!-- RssService -->
+      <rect x="190" y="300" width="180" height="40" rx="6" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
+      <text x="280" y="318" fill="#34d399" font-size="10" text-anchor="middle" font-weight="600">RssService</text>
+      <text x="280" y="332" fill="#6ee7b7" font-size="7" text-anchor="middle" opacity="0.7">RSS parsing · dio HTTP · xml</text>
+
+      <!-- AudioService -->
+      <rect x="325" y="300" width="180" height="40" rx="6" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
+      <text x="415" y="318" fill="#34d399" font-size="10" text-anchor="middle" font-weight="600">AudioService</text>
+      <text x="415" y="332" fill="#6ee7b7" font-size="7" text-anchor="middle" opacity="0.7">ChangeNotifier · just_audio</text>
+
+      <!-- TopPodcastService -->
+      <rect x="55" y="348" width="180" height="40" rx="6" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
+      <text x="145" y="366" fill="#34d399" font-size="10" text-anchor="middle" font-weight="600">TopPodcastService</text>
+      <text x="145" y="380" fill="#6ee7b7" font-size="7" text-anchor="middle" opacity="0.7">iTunes API · 24h cache</text>
+
+      <!-- ==================== LAYER 2: MODELS ==================== -->
+
+      <rect x="160" y="405" width="240" height="22" rx="4" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+      <text x="280" y="420" fill="#a78bfa" font-size="9" text-anchor="middle">📦 Models: PodcastSubscription · Episode</text>
+
+      <!-- ==================== LAYER 3: SCREENS ==================== -->
+
+      <text x="65" y="478" fill="#22d3ee" font-size="10" font-weight="600">🖥️ Screens</text>
+
+      <!-- HomeScreen -->
+      <rect x="55" y="488" width="180" height="36" rx="6" fill="rgba(8, 51, 68, 0.5)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="145" y="504" fill="#22d3ee" font-size="10" text-anchor="middle" font-weight="600">HomeScreen</text>
+      <text x="145" y="518" fill="#67e8f9" font-size="7" text-anchor="middle" opacity="0.7">Stack + TagTrack arc</text>
+
+      <!-- SettingsScreen -->
+      <rect x="190" y="488" width="180" height="36" rx="6" fill="rgba(8, 51, 68, 0.5)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="280" y="504" fill="#22d3ee" font-size="10" text-anchor="middle" font-weight="600">SettingsScreen</text>
+      <text x="280" y="518" fill="#67e8f9" font-size="7" text-anchor="middle" opacity="0.7">AppBar centered · Hot list</text>
+
+      <!-- EpisodesScreen -->
+      <rect x="325" y="488" width="180" height="36" rx="6" fill="rgba(8, 51, 68, 0.5)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="415" y="504" fill="#22d3ee" font-size="10" text-anchor="middle" font-weight="600">EpisodesScreen</text>
+      <text x="415" y="518" fill="#67e8f9" font-size="7" text-anchor="middle" opacity="0.7">Cache-first · multi-select</text>
+
+      <!-- PlayerScreen -->
+      <rect x="460" y="488" width="160" height="36" rx="6" fill="rgba(8, 51, 68, 0.5)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="540" y="504" fill="#22d3ee" font-size="10" text-anchor="middle" font-weight="600">PlayerScreen</text>
+      <text x="540" y="518" fill="#67e8f9" font-size="7" text-anchor="middle" opacity="0.7">ListenableBuilder</text>
+
+      <!-- ==================== LAYER 4: WIDGETS ==================== -->
+
+      <text x="65" y="618" fill="#fbbf24" font-size="10" font-weight="600">🧩 Shared Widgets</text>
+
+      <rect x="55" y="628" width="155" height="40" rx="6" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="132" y="646" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">WatchSafeArea</text>
+      <text x="132" y="660" fill="#fde68a" font-size="7" text-anchor="middle" opacity="0.7">Safe padding for round</text>
+
+      <rect x="220" y="628" width="100" height="40" rx="6" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="270" y="646" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">WearScale</text>
+      <text x="270" y="660" fill="#fde68a" font-size="7" text-anchor="middle" opacity="0.7">Base=280 dp</text>
+
+      <rect x="330" y="628" width="155" height="40" rx="6" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="407" y="646" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">GlassBackground</text>
+      <text x="407" y="660" fill="#fde68a" font-size="7" text-anchor="middle" opacity="0.7">Frosted glass effect</text>
+
+      <rect x="55" y="676" width="155" height="40" rx="6" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="132" y="694" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">TagTrack</text>
+      <text x="132" y="708" fill="#fde68a" font-size="7" text-anchor="middle" opacity="0.7">CustomPaint arc · -45°~45°</text>
+
+      <rect x="220" y="676" width="100" height="40" rx="6" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="270" y="694" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">HotPodcastList</text>
+      <text x="270" y="708" fill="#fde68a" font-size="7" text-anchor="middle" opacity="0.7">cover+title+sub</text>
+
+      <rect x="330" y="676" width="155" height="40" rx="6" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1"/>
+      <text x="407" y="694" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">EpisodeTile / Preview</text>
+      <text x="407" y="708" fill="#fde68a" font-size="7" text-anchor="middle" opacity="0.7">Details</text>
+
+      <!-- ==================== EXTERNAL SERVICES ==================== -->
+
+      <!-- iTunes RSS -->
+      <rect x="590" y="80" width="200" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="690" y="100" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="600">iTunes RSS API</text>
+      <text x="690" y="114" fill="#cbd5e1" font-size="8" text-anchor="middle" opacity="0.7">itunes.apple.com/cn/rss/toppodcasts</text>
+      <text x="690" y="128" fill="#cbd5e1" font-size="7" text-anchor="middle" opacity="0.6">GET · Top 10 China</text>
+
+      <!-- iTunes Lookup -->
+      <rect x="590" y="150" width="200" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="690" y="170" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="600">iTunes Lookup API</text>
+      <text x="690" y="184" fill="#cbd5e1" font-size="8" text-anchor="middle" opacity="0.7">lookup?id=&lt;id&gt;</text>
+      <text x="690" y="198" fill="#cbd5e1" font-size="7" text-anchor="middle" opacity="0.6">resolve feedUrl</text>
+
+      <!-- Podcast RSS Feeds -->
+      <rect x="590" y="230" width="200" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="690" y="250" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="600">Podcast RSS Feeds</text>
+      <text x="690" y="264" fill="#cbd5e1" font-size="8" text-anchor="middle" opacity="0.7">XML namespace</text>
+      <text x="690" y="278" fill="#cbd5e1" font-size="7" text-anchor="middle" opacity="0.6">title·image·episodes</text>
+
+      <!-- Audio Streams -->
+      <rect x="590" y="310" width="200" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="690" y="330" fill="#94a3b8" font-size="10" text-anchor="middle" font-weight="600">Audio Stream URLs</text>
+      <text x="690" y="344" fill="#cbd5e1" font-size="8" text-anchor="middle" opacity="0.7">MP3 / AAC via https</text>
+      <text x="690" y="358" fill="#cbd5e1" font-size="7" text-anchor="middle" opacity="0.6">just_audio playback</text>
+
+      <!-- JSON Cache Files -->
+      <rect x="590" y="390" width="200" height="60" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="690" y="410" fill="#a78bfa" font-size="10" text-anchor="middle" font-weight="600">📁 Local Cache (JSON)</text>
+      <text x="690" y="424" fill="#c4b5fd" font-size="8" text-anchor="middle" opacity="0.7">subscriptions.json</text>
+      <text x="690" y="438" fill="#c4b5fd" font-size="7" text-anchor="middle" opacity="0.6">top_podcasts_cache.json</text>
+
+      <!-- ==================== LEGEND ==================== -->
+
+      <rect x="590" y="490" width="400" height="155" rx="10" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+      <text x="610" y="512" fill="#f1f5f9" font-size="11" font-weight="600">📘 Legend</text>
+      <line x1="610" y1="524" x2="990" y2="524" stroke="#1e293b" stroke-width="1"/>
+
+      <rect x="610" y="536" width="16" height="12" rx="3" fill="rgba(8, 51, 68, 0.6)" stroke="#22d3ee" stroke-width="1.5"/>
+      <text x="634" y="546" fill="#94a3b8" font-size="9">Frontend (Screens / Entry)</text>
+
+      <rect x="610" y="556" width="16" height="12" rx="3" fill="rgba(6, 78, 59, 0.5)" stroke="#34d399" stroke-width="1.5"/>
+      <text x="634" y="566" fill="#94a3b8" font-size="9">Services (Business Logic)</text>
+
+      <rect x="610" y="576" width="16" height="12" rx="3" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="634" y="586" fill="#94a3b8" font-size="9">Data / Models / Cache</text>
+
+      <rect x="610" y="596" width="16" height="12" rx="3" fill="rgba(120, 53, 15, 0.35)" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="634" y="606" fill="#94a3b8" font-size="9">Shared Widgets</text>
+
+      <rect x="610" y="616" width="16" height="12" rx="3" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="634" y="626" fill="#94a3b8" font-size="9">External Services</text>
+
+      <line x1="610" y1="638" x2="626" y2="638" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="634" y="642" fill="#94a3b8" font-size="9">Network Request (dashed)</text>
+
+    </svg>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot cyan"></div>
+        <h3>🎯 Key Features</h3>
+      </div>
+      <ul>
+        <li>• Round-screen optimized Wear OS UI</li>
+        <li>• Arc track tag navigation (-45°~45°)</li>
+        <li>• Frosted glass aesthetic (MaskFilter.blur)</li>
+        <li>• iTunes China popular podcasts</li>
+        <li>• Cache-first RSS episode loading</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot emerald"></div>
+        <h3>⚙️ State Management</h3>
+      </div>
+      <ul>
+        <li>• HomeScreen: setState</li>
+        <li>• EpisodesScreen: setState</li>
+        <li>• PlayerScreen: ListenableBuilder</li>
+        <li>• SettingsScreen: setState</li>
+        <li>• AudioService: ChangeNotifier</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot amber"></div>
+        <h3>📦 Dependencies</h3>
+      </div>
+      <ul>
+        <li>• dio: HTTP networking</li>
+        <li>• xml: RSS feed parsing</li>
+        <li>• just_audio: audio playback</li>
+        <li>• path_provider: local storage</li>
+        <li>• cached_network_image: cover art</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    WatchPod · Huawei Watch 3 (233 dp) · Flutter 3.44 · Dart 3.12 · Generated 2026
+  </div>
+
+</div>
+</body>
+</html>
