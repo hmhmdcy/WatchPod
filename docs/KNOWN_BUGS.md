@@ -24,3 +24,20 @@
 **验证情况：**
 - Linux Desktop 拖拽测试：有像素变化（AE > 0），拖拽渲染正常
 - 视觉模型确认：滑块圆点、标签气泡均可正常拖拽渲染
+
+### #2: TagPickerPage AppBar → TopActionBar 迁移 [待办]
+
+**严重度：** 低
+**发现时间：** v1.8.6 提取为独立页面时发现
+**目标版本：** 下一轮
+
+**现状：**
+- TagPickerPage (`lib/screens/tag_picker_page.dart`) 是唯一仍使用旧 AppBar 方案的二级页面
+- 其他二级页面（SettingsScreen/EpisodesScreen/PlayerScreen）均已迁移到 TopActionBar + Stack
+- 当前截图验证 AppBar 无可见背景条/阴影，视觉上干净，但为了一致性建议迁移
+
+**待完成任务：**
+1. 把 AppBar 替换为 TopActionBar + Stack 模式
+2. `✕ close` + "选择标签" 改为 `TopActionBar(actions: [TopAction(child: ...)])`
+3. 删除 `extendBodyBehindAppBar: true`
+4. 标签列表和底部确认按钮布局保持不变
