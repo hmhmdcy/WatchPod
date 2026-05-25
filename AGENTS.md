@@ -35,7 +35,7 @@ WHEN task involves:
 - **HotPodcastList**: `lib/widgets/hot_podcast_list.dart`. Cover(42dp) + title(15sp) + subscribe(44dp). Optional `showTitle` flag.
 - **EpisodesScreen**: v1.8.5 重构为 **TopActionBar** + **Stack** 模式。无 AppBar。单按钮（多选模式→close/正常→arrow_back）用 TopActionBar 组件。无 SafeArea，无 WatchSafeArea。多选底部操作栏在 Column 内位于列表下方。
 - **StorageService**: Silently returns [] on parse failure. No migration support.
-- **TagPickerPage** (`lib/screens/tag_picker_page.dart`): v1.8.6 从 settings_screen.dart 提取为独立公开页面。全屏标签选择，添加订阅流程中使用 `TagPickerPage.show()`。仍使用旧 AppBar 方案（未迁移到 TopActionBar）。标签数据源：`PodcastSubscription.presetTags`。
+- **TagPickerPage** (`lib/screens/tag_picker_page.dart`): v1.8.6 从 settings_screen.dart 提取为独立公开页面。全屏标签选择。**v1.9.0 迁移: AppBar → TopActionBar(compact: true)** 纯图标 ✕。**v1.9.1 布局优化**: `SafeArea → Center → SizedBox(192) → Stack` 结构，标签气泡加大到 ≈92dp（`(maxWidth - ws.s(3)*3)/2`），列间距 `spacing:8` 行间距 `runSpacing:5`，确认按钮半透明毛玻璃 `BackdropFilter blur 6` + alpha 0.35。`ScrollView padding bottom: 80` 确保最后一行在按钮上方。标签数据源：`PodcastSubscription.presetTags`（10个预设标签）。
 
 ## KEY PITFALLS
 
@@ -57,5 +57,7 @@ WHEN task involves:
 16. **Linux Desktop: xwd NOT scrot/ffmpeg (v1.8.3)**: In WSL2/WSLg, standard screenshot tools capture WSL-internal display (blank/black). Use `xwd` to read pixels from X11 shared memory directly. Workflow: `xdotool search --name watchpod` → `xwd -id <ID> -out /tmp/wp.xwd` → `convert /tmp/wp.xwd /tmp/wp.png` → `vision_analyze`.
 17. **Linux Desktop: cleanup after use (v1.8.3)**: Always run `pkill -f 'watchpod.*linux'` after debugging. Leftover processes accumulate and consume GPU/CPU resources. The 466×466 undecorated window persists on the Windows desktop until killed. **v1.8.4:** `pkill -f` may miss processes under shell protection. Use `kill -9 <PID>` with explicit PID list when `pkill` leaves survivors.
 18. **标签气泡弧线定位 (v1.8.4)**: 气泡 `Positioned(top: _dragY, right: screenSize.width - _dragArcX + 29)` 中 `_dragArcX` 在 `_updateFromY()` 中用圆方程 `cx + R*cos(θ)` 同步计算。**不要直接用 `left: _dragArcX - N`** —— 气泡有动态宽度，用 `left` 会让气泡内容与弧线重叠。必须用 `right` 从屏幕右边缘算，确保气泡右边缘紧贴弧线左侧。气泡样式已轻量化（10sp, alpha 0.5），不要改回 12sp/bold。
-19. **TopActionBar 全屏统一 (v1.8.5)**: SettingsScreen、EpisodesScreen、PlayerScreen 均已从 AppBar 迁移到 TopActionBar + Stack 模式。只有 HomeScreen 保留 WatchSafeArea。不要在已迁移的页面上再加 AppBar。
+19. **TopActionBar 全屏统一 (v1.8.5+)**: SettingsScreen、EpisodesScreen、PlayerScreen 均已从 AppBar 迁移到 TopActionBar + Stack 模式。**v1.9.0: TagPickerPage 也完成迁移**（使用 `TopActionBar(compact: false)` 自适应宽度药丸按钮）。所有二级页面均已统一。只有 HomeScreen 保留 WatchSafeArea。不要在已迁移的页面上再加 AppBar。
 20. **TopActionBar 单按钮用法**: EpisodesScreen 和 PlayerScreen 各只有一个按钮，也使用 TopActionBar。单按钮 TopActionBar 的 `actions` 列表长度 = 1，居中效果和 AppBar 一样好，还避免了 AppBar 的阴影/背景条问题。
+21. **TopActionBar(compact: false) 模式 (v1.9.0)**: `TopActionBar(compact: true)`(默认)强制 40×40 圆形按钮。`TopActionBar(compact: false)` 改为自适应宽度药丸(最小宽度 40dp, padding 水平 12dp)，适合 icon+text 双元素按钮（如 TagPickerPage 的 `✕ 选择标签`）。圆形按钮和药丸按钮的样式统一（glass bg / border / borderRadius: ws.s(20)）。
+22. **_LinuxDebugPages initialPage 参数 (v1.9.0)**: 调试页面构造函数新增 `initialPage` 参数（默认 0 = HomeScreen），替代硬编码 `_currentPage = N`。切换调试页面只需在 `_LinuxDebugPages(initialPage: N)` 传索引，无需改源码值再改回来。索引: 0=Home, 1=Episodes, 2=Player, 3=Settings, 4=TagPicker。

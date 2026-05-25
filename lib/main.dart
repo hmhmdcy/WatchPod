@@ -116,6 +116,7 @@ class _WebDebugShell extends StatelessWidget {
               width: watchSize,
               height: watchSize,
               child: _LinuxDebugPages(
+                initialPage: 4,
                 audioService: audioService,
                 storageService: storageService,
                 rssService: rssService,
@@ -133,11 +134,13 @@ class _LinuxDebugPages extends StatefulWidget {
   final AudioService audioService;
   final StorageService storageService;
   final RssService rssService;
+  final int initialPage;
 
   const _LinuxDebugPages({
     required this.audioService,
     required this.storageService,
     required this.rssService,
+    this.initialPage = 0,  // 默认 HomeScreen（主页）
   });
 
   @override
@@ -145,7 +148,13 @@ class _LinuxDebugPages extends StatefulWidget {
 }
 
 class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
-  int _currentPage = 3;
+  late int _currentPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPage = widget.initialPage;
+  }
 
   static final _mockPodcast = PodcastSubscription(
     id: 'mock-1',

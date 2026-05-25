@@ -190,10 +190,15 @@ class GlassImage extends StatelessWidget {
 /// 所有操作按钮使用统一的 40dp 圆形样式，居中排列，间距 ws.s(6)。
 /// 替代 AppBar（解决 AppBar 底部深色残留问题）。
 /// 用法: 在 Stack 中放在内容层之上。
+///
+/// [compact] = true（默认）：按钮为 40×40 圆形，适合纯图标按钮。
+/// [compact] = false 时，每个按钮根据 child 的 intrinsic width 自适应宽度（最小 40dp），
+/// 圆角仍为 ws.s(20)，适合 icon+text 双元素按钮。
 class TopActionBar extends StatelessWidget {
   final List<TopAction> actions;
+  final bool compact;
 
-  const TopActionBar({super.key, required this.actions});
+  const TopActionBar({super.key, required this.actions, this.compact = true});
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +214,7 @@ class TopActionBar extends StatelessWidget {
           children: [
             for (int i = 0; i < actions.length; i++) ...[
               if (i > 0) SizedBox(width: ws.s(6)),
-              _buildButton(ws, actions[i]),
+              compact ? _buildCompactButton(ws, actions[i]) : _buildWideButton(ws, actions[i]),
             ],
           ],
         ),
@@ -217,12 +222,36 @@ class TopActionBar extends StatelessWidget {
     );
   }
 
-  Widget _buildButton(WearScale ws, TopAction action) {
+  Widget _buildCompactButton(WearScale ws, TopAction action) {
     return GestureDetector(
       onTap: action.onTap,
       child: Container(
         height: ws.s(40),
         width: ws.s(40),
+        decoration: BoxDecoration(
+          color: action.brighter
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(ws.s(20)),
+          border: Border.all(
+            color: action.brighter
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
+        ),
+        child: Center(child: action.child),
+      ),
+    );
+  }
+
+  Widget _buildWideButton(WearScale ws, TopAction action) {
+    return GestureDetector(
+      onTap: action.onTap,
+      child: Container(
+        height: ws.s(40),
+        constraints: BoxConstraints(minWidth: ws.s(40)),
+        padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
         decoration: BoxDecoration(
           color: action.brighter
               ? Colors.white.withValues(alpha: 0.1)

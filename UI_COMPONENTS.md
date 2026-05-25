@@ -47,7 +47,7 @@ Since v1.8.1, TWO layout patterns are used depending on screen:
 | **SettingsScreen** | Stack + TopActionBar overlay + SafeArea | No AppBar. Buttons float in TopActionBar. `SafeArea` instead of `WatchSafeArea`. |
 | **EpisodesScreen** | Stack + TopActionBar overlay | Single centered button in TopActionBar (arrow_back / close). |
 | **PlayerScreen** | Stack + TopActionBar overlay + SafeArea | Single centered back button in TopActionBar. Center content in SafeArea. |
-| **TagPickerPage** | AppBar centered title | ✕ close + "选择标签" centerTitle. `SafeArea`. |
+| **TagPickerPage** | Stack + TopActionBar(compact: true) overlay | Pure icon ✕ circle button (default compact). Tag grid 2-col layout. Mid-bottom floating confirm btn, translucent frosted glass (BackdropFilter blur 6). ScrollView with bottom padding for last-row clearance. |
 
 ## HomeScreen Layout (v1.8.2+)
 
@@ -427,12 +427,15 @@ For accurate round-screen simulation, the `MediaQuery` override is **critical** 
 ### TagPickerPage
 **File:** `lib/screens/tag_picker_page.dart`
 - 全屏标签选择页面，在添加订阅流程中使用 (`TagPickerPage.show()`)
-- 使用旧 AppBar 方案（`centerTitle: true`, `backgroundColor: Colors.transparent`, `extendBodyBehindAppBar: true`）
-- 标题 ✕ close + "选择标签" 居中可点
-- 标签网格：`LayoutBuilder` + `Wrap` + 4列自适应宽度，10个预设标签
-- 推荐标签行：`Wrap` + 小胶囊(9sp) + 紫色
-- 底部确认按钮：无选择时灰色"跳过标签"，有选择时紫色"确定 (N)"
-- 数据源：`PodcastSubscription.presetTags`
+- **v1.9.0 迁移: AppBar → TopActionBar(compact: true)** — 去掉 AppBar，改用 Stack + `TopActionBar(compact: true)`（纯图标 ✕），final form 经迭代确认
+- **v1.9.x 布局优化 (2026-05-25):**
+  - 结构: `GlassBackground → SafeArea → Center → SizedBox(width:192) → Stack`
+  - 内容层: `Positioned.fill → Padding(top:60) → SingleChildScrollView(padding bottom:80)`，确保最后一行标签在悬浮按钮上方
+  - 标题: `ws.sp(14)` white w500，通过 `Padding(top:60)` 与 ✕ 按钮拉开距离
+  - 标签网格: 2列，`tagWidth = (maxWidth - ws.s(3)*3) / 2` ≈ 92dp（靠近但不贴边），`spacing: ws.s(8)` 列间距，`runSpacing: ws.s(5)` 行间距，`vertical padding: ws.s(7)` 气泡高度
+  - 确认按钮: `Positioned(bottom:8)` 固定悬浮，`BackdropFilter blur 6` + alpha 0.35 紫色（有选择）/ alpha 0.1 白色（无选择），半透明毛玻璃可透出下方标签暗示可滚动
+- 数据源：`PodcastSubscription.presetTags` (10 tags: 科技/商业/文化/社会/故事/新闻/教育/生活/音乐/搞笑)
+- 推荐标签行：`Wrap` + 小胶囊(9sp) + 紫色提示
 
 ### Cache Behavior
 - TopPodcastService: 24h memory + file cache. `invalidateCache()` for manual refresh.

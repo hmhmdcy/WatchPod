@@ -1,5 +1,34 @@
 # WatchPod Changelog
 
+## v1.9.1 — 2026-05-25
+
+### Changed
+- **TagPickerPage 布局优化** (`lib/screens/tag_picker_page.dart`):
+  - 结构改为 `SafeArea → Center → SizedBox(width:192) → Stack`，内容用 `Positioned.fill` 占满垂直空间
+  - 标题 `ws.sp(14)` white w500，`Padding(top: ws.s(60))` 与 ✕ 按钮拉开距离，解决重叠问题
+  - 标签气泡加大：宽度从 `(maxWidth - ws.s(12)*3)/2` 改为 `(maxWidth - ws.s(3)*3)/2`（≈92dp），更宽靠近但不贴边
+  - 列间距 `spacing: ws.s(8)`、行间距 `runSpacing: ws.s(5)`、标签气泡 `vertical padding: ws.s(7)`
+  - 确认按钮改为半透明毛玻璃：`BackdropFilter blur 6` + alpha 0.35 紫色/0.1 白色，透出下方标签暗示可滚动
+  - `ScrollView padding bottom: ws.s(80)` 确保最后一行标签在按钮上方
+- **TopActionBar compact 默认保持 true** — TagPickerPage final form 为纯图标 ✕（不是之前 compact:false 药丸），删除 compact:false 相关文档描述
+
+### Documentation
+- UI_COMPONENTS.md: 更新 TagPickerPage 节为 v1.9.x 布局描述，更新快速参考表
+- CHANGELOG.md: 本次变更记录
+
+## v1.9.0 — 2026-05-25
+
+### Changed
+- **TagPickerPage: AppBar → TopActionBar(compact: false) 迁移** (`lib/screens/tag_picker_page.dart`) — 去掉 AppBar（`backgroundColor: Colors.transparent, extendBodyBehindAppBar: true`），改用 Stack + TopActionBar(compact: false) 模式。顶部按钮改为自适应宽度药丸 `✕ 选择标签`（最小 40dp, padding 水平 12dp, borderRadius: ws.s(20)）。Content 通过 `Padding(top: ws.s(48))` 与按钮栏错开。与其他二级页面（SettingsScreen/EpisodesScreen/PlayerScreen）统一为 TopActionBar 方案。
+- **TopActionBar 新增 compact 开关** (`lib/widgets/glass_components.dart`) — `TopActionBar(compact: true)`(默认) 维持 40×40 圆形按钮不变；`TopActionBar(compact: false)` 改为自适应宽度药丸（`minWidth: ws.s(40)`, padding: horizontal 12dp）。两个模式的样式统一（glass bg / border / borderRadius: ws.s(20)）。
+- **_LinuxDebugPages 新增 initialPage 参数** (`lib/main.dart`) — 替代硬编码 `int _currentPage = N`。构造函数 `_LinuxDebugPages(initialPage: N)` 传索引切换调试页面，无需改源码值。页面索引: 0=Home, 1=Episodes, 2=Player, 3=Settings, 4=TagPicker。默认值 0（HomeScreen）。
+
+### Documentation
+- AGENTS.md: 更新 TagPickerPage 状态（已迁移），新增 pitfall #21 (compact:false) / #22 (initialPage)，更新 pitfall #19 (全屏统一)
+- UI_COMPONENTS.md: 更新 TagPickerPage 节为 TopActionBar(compact: false) 模式，更新顶部快速参考表
+- ARCHITECTURE.md: 更新 TagPickerPage 文件描述/导航图/Per-Screen Button Spec/布局代码示例
+- CHANGELOG.md: 本次变更记录
+
 ## v1.8.6 — 2026-05-25
 
 ### Changed
