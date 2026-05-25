@@ -6,7 +6,7 @@
 |> PACKAGE: com.watchpod.watchpod
 |> TARGET: Release APK for ARMv7 (Huawei Watch 3), ARM64. Debug for x86_64 (emulator)
 |> WEARSCALE BASE: 280 dp (not standard 360 dp). See ARCHITECTURE.md for rationale.
-|> LINUX DEBUG: flutter build linux --debug → ./build/linux/x64/debug/bundle/watchpod (466×466, undecorated, circular ClipRRect). Screenshot with xwd, not scrot. Cleanup: pkill -f 'watchpod.*linux'
+||> LINUX DEBUG: Use `flutter run -d linux --debug` NOT direct binary. Direct binary (`./build/linux/x64/debug/bundle/watchpod`) may start without creating a visible X11 window in WSLg. Build first, then kill old flutter run, launch via `flutter run -d linux --debug` (wait 10-12s for window). Load `wslg-x11-screenshot` skill for full debug workflow (截图 xwd/import, 录屏 ffmpeg, 模拟交互 xdotool, 清理). Cleanup: pkill -f 'watchpod.*linux'. After screenshot, ALWAYS send to user via Feishu: send_message(target:"feishu", message:"MEDIA:<path>\\n说明").
 
 ## TRIGGER CONDITIONS
 
