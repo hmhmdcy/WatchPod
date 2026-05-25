@@ -44,7 +44,9 @@ Since v1.8.1, TWO layout patterns are used depending on screen:
 | Screen | Pattern | Content |
 |--------|---------|---------|
 | **HomeScreen** | Stack + right arc track overlay | Full-width content (centered) + TagTrack overlay |
-| **All others** | AppBar centered buttons + full content | Scaffold(extendBodyBehindAppBar) + WatchSafeArea(body) |
+| **SettingsScreen** | Stack + TopActionBar overlay + SafeArea | No AppBar. Buttons float in TopActionBar. `SafeArea` instead of `WatchSafeArea`. |
+| **EpisodesScreen** | AppBar centered buttons | Single back button in AppBar.title. `SafeArea` (v1.8.5) instead of `WatchSafeArea`. |
+| **PlayerScreen** | AppBar centered back button | Single back button. `SafeArea`. |
 
 ## HomeScreen Layout (v1.8.2+)
 
@@ -173,37 +175,54 @@ SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
 - **Bottom 85%+:** 2s hold → purple glow + "添加订阅" bubble → auto-navigate to SettingsScreen
 - **Lift:** Commits selected tag as active filter
 
-## SettingsScreen Layout (v1.8.1+)
+## SettingsScreen Layout (v1.8.5+)
+
+**TopActionBar pattern:** No AppBar. Buttons are `TopActionBar` (Stack+Positioned overlay) floating on content.
 
 ```dart
 Scaffold(
-  extendBodyBehindAppBar: true,
-  appBar: AppBar(
-    backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
-    scrolledUnderElevation: 0,
-    surfaceTintColor: Colors.transparent,
-    centerTitle: true,
-    automaticallyImplyLeading: false,
-    title: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _backButton(),    // ← glass pill 36dp
-        SizedBox(width: ws.s(6)),
-        _refreshButton(), // 🔄 glass pill 36dp
-        SizedBox(width: ws.s(6)),
-        _addButton(),     // + glass pill 36dp
-      ],
-    ),
-  ),
   body: GlassBackground(
-    child: Column(
+    child: Stack(
       children: [
-        Expanded(child: WatchSafeArea(child: HotPodcastList(...))),
+        // Content — SafeArea(horizontal:8) instead of WatchSafeArea
+        SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(top: ws.s(48)), // room for TopActionBar
+            child: Column(
+              children: [
+                // Title row
+                Padding(
+                  padding: EdgeInsets.only(left: ws.s(24), bottom: ws.s(4)),
+                  child: Text('🔥 苹果热门播客', left:...),
+                ),
+                Expanded(
+                  child: HotPodcastList(
+                    showTitle: false,
+                    onItemTap: ...,
+                    onSubscribe: ...,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // TopActionBar — float above content, outside SafeArea
+        TopActionBar(
+          actions: [
+            TopAction(child: Icon(Icons.arrow_back, size: ws.s(18)), onTap: pop),
+            TopAction(child: Icon(Icons.refresh, size: ws.s(18)), onTap: refresh),
+            TopAction(child: Icon(Icons.add, size: ws.s(18)), onTap: add),
+          ],
+        ),
       ],
     ),
   ),
 );
 ```
+
+**Why:** AppBar leaves a semi-transparent background bar + shadow line even with transparent bg. TopActionBar + Stack eliminates all traces of AppBar UI artifacts.
+
+**Why SafeArea instead of WatchSafeArea:** WatchSafeArea clips content edges to the circular mask radius, cutting off list card edges on round screens. `SafeArea` only adds system-inset padding (status bar, chin) without circular clipping, letting list cards render fully visible on both square and round screens.
 
 ## EpisodesScreen Layout (v1.8.1+)
 
