@@ -228,10 +228,3 @@
 ### Added
 - WatchLayout dual-zone layout
 - Huawei Watch 3 screen adaptation
-
-## Known
-
-### TagPickerPage 所需改动 (待办)
-- 迁移 AppBar → TopActionBar + Stack 统一方案
-- 当前 TagPickerPage 是唯一仍使用旧 AppBar 方案的页面，与其他二级页面不一致
-- 提取后为独立文件 `lib/screens/tag_picker_page.dart`，已准备好重构
