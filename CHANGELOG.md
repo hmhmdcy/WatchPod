@@ -1,5 +1,14 @@
 # WatchPod Changelog
 
+## v1.9.4 — 2026-05-26
+
+### Changed
+- **全局圆形裁剪：MaterialApp.builder 统一所有路由** (`lib/main.dart`):
+  - 将 `ClipRRect(圆形)` + `MediaQuery(466×466)` 从 `_WebDebugShell` 提升到 `MaterialApp.builder`
+  - 所有页面（包括 Navigator.push 路由）自动获得圆形裁剪，不再依赖 IndexedStack
+  - 合并 `_WebDebugShell` + `_LinuxDebugPages` → `_DebugPages`，去掉冗余嵌套
+  - 重命名 `_HomePage` 为统一入口：调试模式用 IndexedStack，生产模式用 HomeScreen
+
 ## v1.9.3 — 2026-05-26
 
 ### Added

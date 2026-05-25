@@ -70,44 +70,26 @@ class WatchPodApp extends StatelessWidget {
           trackHeight: 3,
         ),
       ),
-      home: (kIsWeb || Platform.isLinux)
-          ? _WebDebugShell(
-              audioService: audioService,
-              storageService: storageService,
-              rssService: rssService,
-            )
-          : HomeScreen(
-              audioService: audioService,
-              storageService: storageService,
-              rssService: rssService,
-            ),
+      /// 全局 builder：统一所有路由的圆形裁剪 + 固定尺寸
+      /// 调试模式（Web / Linux Desktop）：ClipRRect 圆形 + 466×466
+      /// 生产模式（Android）：透传，不影响真机
+      builder: _circularScreenBuilder,
+      home: _HomePage(
+        audioService: audioService,
+        storageService: storageService,
+        rssService: rssService,
+      ),
     );
   }
-}
 
-/// Web 调试外壳：底部导航切换四个页面，方便视觉检查
-/// Linux Desktop 调试外壳：固定 466×466 圆形窗口模拟 Huawei Watch 3
-class _WebDebugShell extends StatelessWidget {
-  final AudioService audioService;
-  final StorageService storageService;
-  final RssService rssService;
-
-  const _WebDebugShell({
-    required this.audioService,
-    required this.storageService,
-    required this.rssService,
-  });
-
-  static const double watchSize = 466;
-
-  @override
-  Widget build(BuildContext context) {
-    final clipRadius = watchSize / 2;
-
-    return Scaffold(
-      body: Center(
+  /// 所有路由共享的圆形屏幕裁剪
+  /// MaterialApp.builder 包裹 Navigator 的所有页面（home + push 路由）
+  Widget _circularScreenBuilder(BuildContext context, Widget? child) {
+    if (kIsWeb || Platform.isLinux) {
+      const watchSize = 466.0;
+      return Center(
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(clipRadius),
+          borderRadius: BorderRadius.circular(watchSize / 2),
           child: MediaQuery(
             data: MediaQuery.of(context).copyWith(
               size: const Size(watchSize, watchSize),
@@ -115,39 +97,68 @@ class _WebDebugShell extends StatelessWidget {
             child: SizedBox(
               width: watchSize,
               height: watchSize,
-              child: _LinuxDebugPages(
-                initialPage: 1,
-                audioService: audioService,
-                storageService: storageService,
-                rssService: rssService,
-              ),
+              child: child,
             ),
           ),
         ),
-      ),
+      );
+    }
+    return child!;
+  }
+}
+
+/// 主页选择器
+/// - 调试模式（Web / Linux Desktop）：IndexedStack 多页切换
+/// - 生产模式（Android）：直接 HomeScreen
+class _HomePage extends StatelessWidget {
+  final AudioService audioService;
+  final StorageService storageService;
+  final RssService rssService;
+
+  const _HomePage({
+    required this.audioService,
+    required this.storageService,
+    required this.rssService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb || Platform.isLinux) {
+      return _DebugPages(
+        initialPage: 0,
+        audioService: audioService,
+        storageService: storageService,
+        rssService: rssService,
+      );
+    }
+    return HomeScreen(
+      audioService: audioService,
+      storageService: storageService,
+      rssService: rssService,
     );
   }
 }
 
-/// Linux Desktop 四页导航：Home / Episodes / Player / Settings / TagPicker
-class _LinuxDebugPages extends StatefulWidget {
+/// Linux Desktop / Web 多页调试容器
+/// IndexedStack 切换 5 个页面：Home / Episodes / Player / Settings / TagPicker
+class _DebugPages extends StatefulWidget {
   final AudioService audioService;
   final StorageService storageService;
   final RssService rssService;
   final int initialPage;
 
-  const _LinuxDebugPages({
+  const _DebugPages({
     required this.audioService,
     required this.storageService,
     required this.rssService,
-    this.initialPage = 0,  // 默认 HomeScreen（主页）
+    this.initialPage = 0,
   });
 
   @override
-  State<_LinuxDebugPages> createState() => _LinuxDebugPagesState();
+  State<_DebugPages> createState() => _DebugPagesState();
 }
 
-class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
+class _DebugPagesState extends State<_DebugPages> {
   late int _currentPage;
 
   @override
@@ -192,7 +203,6 @@ class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
         ),
         PlayerScreen(audioService: widget.audioService),
         SettingsScreen(storageService: widget.storageService),
-        // TagPickerPage — 公开类，可直接引用
         TagPickerPage(
           podcast: _mockPodcastWithTags,
           suggested: _mockPodcastWithTags.tags,
