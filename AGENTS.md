@@ -61,3 +61,5 @@ WHEN task involves:
 20. **TopActionBar 单按钮用法**: EpisodesScreen 和 PlayerScreen 各只有一个按钮，也使用 TopActionBar。单按钮 TopActionBar 的 `actions` 列表长度 = 1，居中效果和 AppBar 一样好，还避免了 AppBar 的阴影/背景条问题。
 21. **TopActionBar(compact: false) 模式 (v1.9.0)**: `TopActionBar(compact: true)`(默认)强制 40×40 圆形按钮。`TopActionBar(compact: false)` 改为自适应宽度药丸(最小宽度 40dp, padding 水平 12dp)，适合 icon+text 双元素按钮（如 TagPickerPage 的 `✕ 选择标签`）。圆形按钮和药丸按钮的样式统一（glass bg / border / borderRadius: ws.s(20)）。
 22. **_LinuxDebugPages initialPage 参数 (v1.9.0)**: 调试页面构造函数新增 `initialPage` 参数（默认 0 = HomeScreen），替代硬编码 `_currentPage = N`。切换调试页面只需在 `_LinuxDebugPages(initialPage: N)` 传索引，无需改源码值再改回来。索引: 0=Home, 1=Episodes, 2=Player, 3=Settings, 4=TagPicker。
+23. **EpisodeTile 横向 margin (v1.9.2)**: 圆形屏幕下 `EpisodeTile` 的横向 margin 至少 `ws.s(16)`，推荐 `ws.s(20)`（≈33px）。ws.s(4) 会导致右侧播放按钮在圆形下半部分被裁切。播放按钮图标用 `ws.s(18)` 而非 `ws.s(20)` 以节省边缘空间。
+24. **EpisodesScreen 顶部/底部安全距 (v1.9.2)**: `SizedBox(height: ws.s(60))` 给 TopActionBar 留空间 + 列表顶部不进圆形收窄区；`ListView padding bottom: ws.s(64)` 确保滑到底时最后一项不被裁。底部 padding < ws.s(48) 时最后一项进入圆形下缘裁切区。

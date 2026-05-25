@@ -1,5 +1,19 @@
 # WatchPod Changelog
 
+## v1.9.2 — 2026-05-25
+
+### Fixed
+- **EpisodesScreen 列表项被圆形边缘裁剪** (`lib/widgets/episode_tile.dart`):
+  - 根因：`EpisodeTile` 横向 margin 仅 ws.s(4)（≈7px），右侧播放按钮靠近圆形屏幕右边界时被裁剪
+  - 修复：横向 margin ws.s(4)→ws.s(20)，播放按钮 padding ws.s(6)→ws.s(4)、icon ws.s(20)→ws.s(18)
+  - 效果：第1项气泡四周留白 ~20-25px，完整可见无遮挡
+- **EpisodesScreen 列表顶部/底部圆形裁剪** (`lib/screens/episodes_screen.dart`):
+  - 顶部 spacer ws.s(48)→ws.s(60)，底部 padding ws.s(4)→ws.s(64)
+  - 效果：列表顶部不下压，滑到底时最后一项在圆形安全区内
+
+### Changed
+- **EpisodesScreen 添加 Linux Desktop 模拟数据** — `_loadEpisodes` 增加 `Platform.isLinux` 分支，Linux 调试时直接注入 8 条模拟剧集（不用请求 RSS），方便 UI 调试
+
 ## v1.9.1 — 2026-05-25
 
 ### Changed

@@ -56,7 +56,7 @@ lib/
 │   └── top_podcast_service.dart # iTunes API + 24h cache + TopPodcastItem model
 └── widgets/
     ├── episode_preview_sheet.dart
-    ├── episode_tile.dart
+    ├── episode_tile.dart      # Row layout: cover + text + play btn. ws.s(20) margin for round-screen safety (v1.9.2)
     ├── glass_components.dart
     ├── hot_podcast_list.dart  # List with showTitle prop
     ├── podcast_tile.dart

@@ -116,7 +116,7 @@ class _WebDebugShell extends StatelessWidget {
               width: watchSize,
               height: watchSize,
               child: _LinuxDebugPages(
-                initialPage: 4,
+                initialPage: 1,
                 audioService: audioService,
                 storageService: storageService,
                 rssService: rssService,

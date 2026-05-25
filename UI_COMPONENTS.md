@@ -236,7 +236,7 @@ Scaffold(
       children: [
         Column(
           children: [
-            SizedBox(height: ws.s(48)), // room for TopActionBar
+            SizedBox(height: ws.s(60)), // room for TopActionBar (v1.9.2: 60 for round-screen safety)
             Expanded(child: episodeList),
             if (_selectionMode) _bottomActionBar, // batch download/delete
           ],
@@ -412,9 +412,14 @@ For accurate round-screen simulation, the `MediaQuery` override is **critical** 
 - Cover: `ws.capped(96, maxScale: 1.2)` on HomeScreen (single podcast)
 - Tags: purple glass pills, max 3 shown
 
-### EpisodeTile
+### EpisodeTile (v1.9.2)
 - Params: title, duration, imageUrl, isDownloaded, isPlaying, isSelected, onTap, onLongPress
-- Cover 32dp (capped). Row layout.
+- Cover `ws.capped(36, maxScale: 1.1)`. Row layout with 3 zones.
+- **Round-screen safety margins:**
+  - Horizontal margin: `ws.s(20)` ≈ 33px (prevents right-side clipping on circular bezel)
+  - Play button: icon `ws.s(18)` + padding `ws.s(4)` — compact to fit near right edge
+  - Title font: `ws.sp(13)`, duration: `ws.sp(11)`
+- **Bottom padding:** `ws.s(64)` for EpisodesScreen ListView — last item stays in circular safe zone when scrolled to bottom
 
 ### HotPodcastList
 - Props: items, loading, error, subscribeError, showTitle, onItemTap, onSubscribe

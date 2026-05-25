@@ -33,7 +33,7 @@ class EpisodeTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: ws.s(4), vertical: ws.s(4)),
+        margin: EdgeInsets.symmetric(horizontal: ws.s(20), vertical: ws.s(4)),
         padding: EdgeInsets.all(ws.s(10)),
         decoration: BoxDecoration(
           color: isSelected == true
@@ -120,16 +120,16 @@ class EpisodeTile extends StatelessWidget {
 
             // 播放按钮
             Container(
-              padding: EdgeInsets.all(ws.s(6)),
+              padding: EdgeInsets.all(ws.s(4)),
               decoration: BoxDecoration(
                 color: isPlaying
                     ? const Color(0xFF6C63FF).withValues(alpha: 0.3)
                     : Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(ws.s(14)),
+                borderRadius: BorderRadius.circular(ws.s(12)),
               ),
               child: Icon(
                 isPlaying ? Icons.play_arrow : Icons.play_circle_outline,
-                size: ws.s(20),
+                size: ws.s(18),
                 color: isPlaying ? const Color(0xFF6C63FF) : Colors.grey,
               ),
             ),

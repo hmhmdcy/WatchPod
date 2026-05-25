@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:dio/dio.dart';
 import '../models/podcast_subscription.dart';
 import '../models/episode.dart';
@@ -46,7 +47,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   }
 
   Future<void> _loadEpisodes() async {
-    if (kIsWeb) {
+    if (kIsWeb || Platform.isLinux) {
       // Web 调试：注入模拟剧集数据
       _episodes = List.generate(8, (i) => Episode(
         id: 'mock-ep-$i',
@@ -197,7 +198,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
             Column(
               children: [
                 // 顶部留空给 TopActionBar
-                SizedBox(height: ws.s(48)),
+                SizedBox(height: ws.s(60)),
                 Expanded(
                   child: _loading
                       ? const Center(child: CircularProgressIndicator(color: Colors.white))
@@ -283,7 +284,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   Widget _buildEpisodeList() {
     final ws = WearScale.of(context);
     return ListView.builder(
-      padding: EdgeInsets.only(top: ws.s(4), bottom: ws.s(4)),
+      padding: EdgeInsets.only(top: ws.s(4), bottom: ws.s(64)),
       itemCount: _episodes.length,
       itemBuilder: (context, index) {
         final ep = _episodes[index];
