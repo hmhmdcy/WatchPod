@@ -190,120 +190,90 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: _selectionMode
-            ? GestureDetector(
-                onTap: _exitSelectionMode,
-                child: Container(
-                  height: ws.s(36),
-                  padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(ws.s(16)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.close, size: ws.s(16), color: Colors.white70),
-                      SizedBox(width: ws.s(6)),
-                      Text('退出选择', style: TextStyle(fontSize: ws.sp(12), color: Colors.white70)),
-                    ],
-                  ),
-                ),
-              )
-            : GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  height: ws.s(36),
-                  padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(ws.s(16)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.arrow_back, size: ws.s(16), color: Colors.white70),
-                      SizedBox(width: ws.s(6)),
-                      Text('返回', style: TextStyle(fontSize: ws.sp(12), color: Colors.white70)),
-                    ],
-                  ),
-                ),
-              ),
-      ),
       body: GlassBackground(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: SafeArea(
-                child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                    : _error != null
-                        ? _buildError()
-                        : _episodes.isEmpty
-                            ? _buildEmpty()
-                            : _buildEpisodeList(),
-              ),
+            // 内容
+            Column(
+              children: [
+                // 顶部留空给 TopActionBar
+                SizedBox(height: ws.s(48)),
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                      : _error != null
+                          ? _buildError()
+                          : _episodes.isEmpty
+                              ? _buildEmpty()
+                              : _buildEpisodeList(),
+                ),
+                // 底部操作栏（多选模式下显示）
+                if (_selectionMode)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: ws.s(16), vertical: ws.s(8)),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E).withValues(alpha: 0.95),
+                      border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _batchDownload,
+                            child: GlassContainer(
+                              blur: 6,
+                              tintColor: const Color(0xFF6C63FF).withValues(alpha: 0.2),
+                              borderRadius: 10,
+                              padding: EdgeInsets.symmetric(vertical: ws.s(10)),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.download, size: ws.s(16), color: const Color(0xFF6C63FF)),
+                                  SizedBox(width: ws.s(6)),
+                                  Text('下载', style: TextStyle(fontSize: ws.sp(12), color: const Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: ws.s(12)),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _batchDelete,
+                            child: GlassContainer(
+                              blur: 6,
+                              tintColor: Colors.red.withValues(alpha: 0.15),
+                              borderRadius: 10,
+                              padding: EdgeInsets.symmetric(vertical: ws.s(10)),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.delete_outline, size: ws.s(16), color: Colors.red),
+                                  SizedBox(width: ws.s(6)),
+                                  Text('删除', style: TextStyle(fontSize: ws.sp(12), color: Colors.red, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
-            // 底部操作栏（多选模式下显示）
-            if (_selectionMode)
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: ws.s(16), vertical: ws.s(8)),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.95),
-                  border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+            // TopActionBar — 条件显示返回/关闭按钮
+            TopActionBar(
+              actions: [
+                TopAction(
+                  child: Icon(
+                    _selectionMode ? Icons.close : Icons.arrow_back,
+                    size: ws.s(18),
+                    color: Colors.white70,
+                  ),
+                  onTap: _selectionMode ? _exitSelectionMode : () => Navigator.pop(context),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _batchDownload,
-                        child: GlassContainer(
-                          blur: 6,
-                          tintColor: const Color(0xFF6C63FF).withValues(alpha: 0.2),
-                          borderRadius: 10,
-                          padding: EdgeInsets.symmetric(vertical: ws.s(10)),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.download, size: ws.s(16), color: const Color(0xFF6C63FF)),
-                              SizedBox(width: ws.s(6)),
-                              Text('下载', style: TextStyle(fontSize: ws.sp(12), color: const Color(0xFF6C63FF), fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: ws.s(12)),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _batchDelete,
-                        child: GlassContainer(
-                          blur: 6,
-                          tintColor: Colors.red.withValues(alpha: 0.15),
-                          borderRadius: 10,
-                          padding: EdgeInsets.symmetric(vertical: ws.s(10)),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.delete_outline, size: ws.s(16), color: Colors.red),
-                              SizedBox(width: ws.s(6)),
-                              Text('删除', style: TextStyle(fontSize: ws.sp(12), color: Colors.red, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
+            ),
           ],
         ),
       ),

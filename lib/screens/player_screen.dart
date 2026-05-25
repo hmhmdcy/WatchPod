@@ -25,39 +25,17 @@ class PlayerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            height: ws.s(36),
-            padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(ws.s(16)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.arrow_back, size: ws.s(16), color: Colors.white70),
-                SizedBox(width: ws.s(6)),
-                Text('返回', style: TextStyle(fontSize: ws.sp(12), color: Colors.white70)),
-              ],
-            ),
-          ),
-        ),
-      ),
       body: GlassBackground(
-        child: Center(
-          child: ListenableBuilder(
-            listenable: audioService,
-            builder: (context, _) {
+        child: Stack(
+          children: [
+            // 内容 — SafeArea 包裹，顶部留空给 TopActionBar
+            SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(top: ws.s(48)),
+                child: Center(
+                  child: ListenableBuilder(
+                    listenable: audioService,
+                    builder: (context, _) {
               final ep = kIsWeb && audioService.currentEpisode == null
                   ? Episode(
                       id: 'mock-player-ep',
@@ -223,11 +201,24 @@ class PlayerScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                  ],
-                ),
-              );
-            },
+                    ],
+                  ),
+                );
+              },
           ),
+                ),
+              ),
+            ),
+            // TopActionBar — 返回按钮
+            TopActionBar(
+              actions: [
+                TopAction(
+                  child: Icon(Icons.arrow_back, size: ws.s(18), color: Colors.white70),
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
