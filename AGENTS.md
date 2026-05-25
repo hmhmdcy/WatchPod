@@ -25,13 +25,14 @@ WHEN task involves:
 - **watchpod-ui skill**: Contains the complete layout specification for all screens. Load this FIRST before any UI work. It encodes the top-bar + full-content pattern, WearScale usage rules, arc track spec, and all current constraints.
 - **WearScale**: Adaptive sizing system. `WearScale.of(context).sp(12)` scales 12px to fit screens. **Base is 280 dp**. All hardcoded sizes must use this.
 - **TagTrack** (`lib/widgets/home_tag_track.dart`): Frosted-glass arc track glued to the right circular screen edge. CustomPaint arc (10dp, alpha ~0.69), OverflowBox full-screen canvas, GestureDetector vertical drag for tag switching, 2s bottom hover to add subscription. Uses circle equation `(centerX + R*cos(θ), centerY + R*sin(θ))` from -45° to 45°. **v1.8.4: 标签气泡沿弧线运动** — `_dragArcX` 用圆方程同步计算，气泡右边缘紧贴弧线左侧 (24px 间隙)，轻量化样式 (10sp, alpha 0.5, w500)。Replaces the old right-side panel and thin arc line.
-- **TopActionBar** (`lib/widgets/glass_components.dart`): v1.8.5 新增。统一顶部操作栏组件，Stack+Positioned 悬浮。40dp 圆形按钮、6dp 间距、18sp 图标。接受 `List<TopAction>`。SettingsScreen 已迁移使用。单按钮页面勿用 (保留 AppBar)。
+- **TopActionBar** (`lib/widgets/glass_components.dart`): v1.8.5 新增。统一顶部操作栏组件，Stack+Positioned 悬浮。40dp 圆形按钮、6dp 间距、18sp 图标。接受 `List<TopAction>`。所有二级页面（SettingsScreen/EpisodesScreen/PlayerScreen）均使用此组件。单按钮和多按钮都适用。
 - **HomeScreen**: `GlassBackground → Stack [SafeArea → WatchSafeArea(内容), TagTrack(outside SafeArea)]`. Full-width centered content + right-side arc track overlay. TagTrack in outermost Stack to avoid SafeArea padding clipping touch zone. See pitfall #15.
 - **Web debug** (`main.dart` `_WebDebugShell`): Wraps screens in `ClipRRect(circular)` + `MediaQuery(size: Size(watchSize, watchSize))` override so child widgets read correct circular dimensions on Web. No bottom nav bar.
 - **SettingsScreen**: v1.8.5 重构为 **TopActionBar** + **SafeArea** 模式。无 AppBar。三按钮 (←, 🔄, ➕) 用 `TopActionBar` 组件 (Stack+Positioned 悬浮)。`HotPodcastList` 用 `SafeArea` 而非 `WatchSafeArea` (避免圆形裁剪列表两侧)。标题 left: ws.s(24) 防左上角遮挡。
+- **PlayerScreen**: v1.8.5 重构为 **TopActionBar** + **SafeArea** 模式。单返回按钮。内容（封面+标题+进度条+控制按钮）在 SafeArea 内垂直居中，顶部 Spacer 留空。`ListenableBuilder` 响应 audioService 状态变化。
 - **TopPodcastService**: `lib/services/top_podcast_service.dart`. 24h memory+file cache. `getTopPodcasts()` → iTunes RSS. `resolveFeedUrls()` → iTunes lookup.
 - **HotPodcastList**: `lib/widgets/hot_podcast_list.dart`. Cover(42dp) + title(15sp) + subscribe(44dp). Optional `showTitle` flag.
-- **EpisodesScreen**: Uses direct Scaffold (NOT WatchLayout). Only a centered back arrow (←) in AppBar title slot. Multi-select mode switches to close button. Cache-first: shows cached episodes immediately, silently refreshes RSS. **CRITICAL: Do NOT wrap in WatchLayout** — the `showAppBar: false` + `extendBodyBehindAppBar: true` combo shifts content off-screen on round hardware. v1.8.5: WatchSafeArea → SafeArea (content no longer clipped at circular edges).
+- **EpisodesScreen**: v1.8.5 重构为 **TopActionBar** + **Stack** 模式。无 AppBar。单按钮（多选模式→close/正常→arrow_back）用 TopActionBar 组件。无 SafeArea，无 WatchSafeArea。多选底部操作栏在 Column 内位于列表下方。
 - **StorageService**: Silently returns [] on parse failure. No migration support.
 
 ## KEY PITFALLS
@@ -43,7 +44,7 @@ WHEN task involves:
 5. **mihomo proxy**: Proxy at `127.0.0.1:7890`. API at `127.0.0.1:9090`. Must be running before network ops.
 6. **Build/Git approval required**: Do NOT build APK or push to GitHub without user confirmation. Ask before both.
 7. **Git commit before every build**: Always update CHANGELOG.md first, then `git add <files> && git commit` before `flutter build`.
-8. **All action buttons at top-center, NOT sides**: Round screens clip corners. Use `centerTitle: true` + `automaticallyImplyLeading: false` on every AppBar. Buttons in `leading` or `actions` are invisible on real hardware.
+8. **All action buttons at top-center, NOT sides**: Round screens clip corners. Use TopActionBar (preferred) or `centerTitle: true` on AppBar. Buttons in `leading` or `actions` are invisible on real hardware.
 9. **Do NOT refactor working screens into WatchLayout**: `WatchLayout(showAppBar: false)` with `extendBodyBehindAppBar: true` shifts content off-screen. Keep EpisodesScreen as direct Scaffold.
 10. **WatchSafeArea wraps center zone only**: Every scrollable/list content area should use WatchSafeArea. Top/bottom bars stay outside.
 11. **WearScale base is 280 not 360**: Huawei Watch 3 has ~233 dp logical screen. With base=280, the ratio is 233/280 ≈ 0.83× (elements shrink to 83%). **NOT** 1.32× — the old "~370 dp usable" was a calculation error. Correct logical dp from ADB: 466px / 2.0 (320dpi → xhdpi) = 233 dp.
@@ -54,5 +55,5 @@ WHEN task involves:
 16. **Linux Desktop: xwd NOT scrot/ffmpeg (v1.8.3)**: In WSL2/WSLg, standard screenshot tools capture WSL-internal display (blank/black). Use `xwd` to read pixels from X11 shared memory directly. Workflow: `xdotool search --name watchpod` → `xwd -id <ID> -out /tmp/wp.xwd` → `convert /tmp/wp.xwd /tmp/wp.png` → `vision_analyze`.
 17. **Linux Desktop: cleanup after use (v1.8.3)**: Always run `pkill -f 'watchpod.*linux'` after debugging. Leftover processes accumulate and consume GPU/CPU resources. The 466×466 undecorated window persists on the Windows desktop until killed. **v1.8.4:** `pkill -f` may miss processes under shell protection. Use `kill -9 <PID>` with explicit PID list when `pkill` leaves survivors.
 18. **标签气泡弧线定位 (v1.8.4)**: 气泡 `Positioned(top: _dragY, right: screenSize.width - _dragArcX + 29)` 中 `_dragArcX` 在 `_updateFromY()` 中用圆方程 `cx + R*cos(θ)` 同步计算。**不要直接用 `left: _dragArcX - N`** —— 气泡有动态宽度，用 `left` 会让气泡内容与弧线重叠。必须用 `right` 从屏幕右边缘算，确保气泡右边缘紧贴弧线左侧。气泡样式已轻量化（10sp, alpha 0.5），不要改回 12sp/bold。
-19. **TopActionBar + SafeArea 模式 (v1.8.5)**: SettingsScreen 已从 AppBar+WatchSafeArea 迁移到 TopActionBar+SafeArea。内容 `Padding(top: ws.s(48))` 给 TopActionBar 留空间。**不要在 SettingsScreen 上再加 AppBar 或 WatchSafeArea**。EpisodesScreen 保留了 AppBar 但 WatchSafeArea 替换为 SafeArea。
-20. **TopActionBar 不要用于只有一个按钮的页面**: 单按钮直接用 AppBar.title (如 EpisodesScreen/PlayerScreen)。TopActionBar 设计用于 2-3 个按钮的居中布局。单按钮 AppBar 也替换为 SafeArea 而不是 WatchSafeArea。
+19. **TopActionBar 全屏统一 (v1.8.5)**: SettingsScreen、EpisodesScreen、PlayerScreen 均已从 AppBar 迁移到 TopActionBar + Stack 模式。只有 HomeScreen 保留 WatchSafeArea。不要在已迁移的页面上再加 AppBar。
+20. **TopActionBar 单按钮用法**: EpisodesScreen 和 PlayerScreen 各只有一个按钮，也使用 TopActionBar。单按钮 TopActionBar 的 `actions` 列表长度 = 1，居中效果和 AppBar 一样好，还避免了 AppBar 的阴影/背景条问题。

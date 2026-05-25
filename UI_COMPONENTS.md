@@ -224,52 +224,68 @@ Scaffold(
 
 **Why SafeArea instead of WatchSafeArea:** WatchSafeArea clips content edges to the circular mask radius, cutting off list card edges on round screens. `SafeArea` only adds system-inset padding (status bar, chin) without circular clipping, letting list cards render fully visible on both square and round screens.
 
-## EpisodesScreen Layout (v1.8.1+)
+## EpisodesScreen Layout (v1.8.5+)
 
-```
+**TopActionBar pattern (single button):** No AppBar. Stack + TopActionBar overlay.
+
+```dart
 Scaffold(
-  extendBodyBehindAppBar: true,
-  appBar: AppBar(
-    backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
-    scrolledUnderElevation: 0,
-    centerTitle: true,
-    automaticallyImplyLeading: false,
-    title: GestureDetector(
-      onTap: () => Navigator.pop(context),
-      child: Container(
-        height: ws.s(36),
-        padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
-        decoration: BoxDecoration(...),  // glass pill
-        child: Row(
+  body: GlassBackground(
+    child: Stack(
+      children: [
+        Column(
           children: [
-            Icon(Icons.arrow_back, size: ws.s(16)),
-            SizedBox(width: ws.s(6)),
-            Text('返回'),
+            SizedBox(height: ws.s(48)), // room for TopActionBar
+            Expanded(child: episodeList),
+            if (_selectionMode) _bottomActionBar, // batch download/delete
           ],
         ),
-      ),
-    ),
-  ),
-  body: GlassBackground(
-    child: Column(
-      children: [
-        Expanded(child: WatchSafeArea(child: episodeList)),
-        if (multiSelect) _bottomActionBar,
+        TopActionBar(
+          actions: [
+            TopAction(
+              child: Icon(_selectionMode ? Icons.close : Icons.arrow_back, ...),
+              onTap: _selectionMode ? _exitSelectionMode : () => Navigator.pop(context),
+            ),
+          ],
+        ),
       ],
     ),
   ),
 );
 ```
 
-## PlayerScreen Layout (v1.8.1+)
+**IMPORTANT (v1.8.5):** No SafeArea, no WatchSafeArea. Content is now inside Column directly. The multi-select bottom bar stays inside the Column, below the Expanded list. The TopActionBar icon and callback switch based on `_selectionMode`.
 
-Same AppBar pattern as EpisodesScreen. Content column with `mainAxisAlignment: MainAxisAlignment.center`:
+## PlayerScreen Layout (v1.8.5+)
 
-- Cover: `ws.capped(68, maxScale: 1.2)` with glass rounded corners
-- Title: 2-line max, `ws.fs(12)` font
-- Progress: `SliderTheme` with track height 3dp, width constrained to `min(ws.s(160), screenWidth*0.70)`
-- Time row: `ws.sp(10)` font, 8dp gap
-- Control row: -15s | play/pause | +15s — each button 10dp padded
+**TopActionBar pattern (single button):** Same Stack structure as EpisodesScreen.
+
+```dart
+Scaffold(
+  body: GlassBackground(
+    child: Stack(
+      children: [
+        SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(top: ws.s(48)),
+            child: Center(
+              child: ListenableBuilder(...),
+            ),
+          ),
+        ),
+        TopActionBar(
+          actions: [
+            TopAction(child: Icon(Icons.arrow_back, ...),
+                onTap: () => Navigator.pop(context)),
+          ],
+        ),
+      ],
+    ),
+  ),
+);
+```
+
+Content: cover (68dp) + title + progress slider + -15/play/+15 controls. All centered vertically with Spacer at top.
 
 ## Glass Button Style
 
