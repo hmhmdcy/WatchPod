@@ -1,5 +1,24 @@
 # WatchPod Changelog
 
+## v1.8.4 — 2026-05-25
+
+### Changed
+- **TagTrack 标签气泡定位: 垂直跟随 → 弧线运动** — 气泡从 `Positioned(top: _dragY, right: 34)` 改为 `Positioned(top: _dragY, right: screenSize.width - _dragArcX + 29)`。`_dragArcX` 用圆方程 `cx + R*cos(θ)` 计算，气泡沿弧线滑条轨迹运动，不再是垂直上下移动。
+- **TagTrack 标签气泡样式轻量化** — padding 缩小 (10→8, 6→4)、字号缩小 (12sp→10sp)、透明度降低 (0.7→0.5)、去粗体改为 w500，避免抢主内容焦点。
+- **TagTrack 气泡间距优化** — 气泡右边缘与弧线左侧保持 24px 间隙（之前紧贴弧线导致拥挤感），视觉评估确认"更舒适"。
+
+### Fixed
+- **气泡与弧线重叠问题** — 之前用 `left: _dragArcX - 34` 导致气泡左边缘在弧线左侧但气泡宽度使内容重叠。改用 `right: screenSize.width - _dragArcX + 29`，气泡右边缘始终紧贴弧线左侧不重叠。
+- **残留 watchpod 进程清理** — `pkill -f` 在 shell 保护下可能遗漏进程，需用 `kill -9 <PID>` 逐个清理。
+
+### Added
+- **`_dragArcX` 状态变量** — `_TagTrackState` 新增 `_dragArcX` 字段，在 `_updateFromY()` 中用圆方程同步计算弧线点的 X 坐标，供气泡弧线定位使用。
+
+### Documentation
+- UI_COMPONENTS.md: 更新 TagTrack 架构图，加入气泡弧线定位描述
+- AGENTS.md: 更新 pitfall #18 加入气泡弧线定位和清理注意事项
+- CHANGELOG.md: 本次变更记录
+
 ## v1.8.3 — 2026-05-25
 
 ### Added

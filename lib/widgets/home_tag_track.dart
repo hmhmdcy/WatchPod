@@ -1,6 +1,9 @@
 import 'dart:math';
 import 'dart:async';
+import 'dart:io' show File;
+import 'dart:ui' show PictureRecorder, Canvas, Picture;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'wear_scale.dart';
 
 /// 右侧紧贴圆形表盘的弧线滑条
@@ -29,6 +32,7 @@ class TagTrack extends StatefulWidget {
 
 class _TagTrackState extends State<TagTrack> {
   double _dragY = 0;
+  double _dragArcX = 0;  // 弧线点的 X 坐标（用于气泡沿弧线定位）
   bool _isDragging = false;
   String? _hoverLabel;
   bool _showAddHint = false;
@@ -78,6 +82,7 @@ class _TagTrackState extends State<TagTrack> {
 
   void _updateFromY(double rawY, double height) {
     if (_arcRadius <= 0) return;
+    debugPrint('TAGTRACK: rawY=$rawY, height=$height, arcTop=$_arcTop, arcBottom=$_arcBottom, center=${_circleCenter.dy}, radius=$_arcRadius');
     final clampedY = rawY.clamp(_arcTop, _arcBottom);
     final dy = clampedY - _circleCenter.dy;
     final clampedDy = dy.clamp(-_arcRadius, _arcRadius);
@@ -85,15 +90,19 @@ class _TagTrackState extends State<TagTrack> {
     final totalArcRad = _endAngleRad - _startAngleRad;
     if (totalArcRad <= 0) return;
     final ratio = (theta - _startAngleRad) / totalArcRad;
+    debugPrint('TAGTRACK: clampedY=$clampedY, dy=$dy, theta=$theta, ratio=$ratio');
 
     final index = (ratio * (_allLabels.length - 1)).round().clamp(0, _allLabels.length - 1);
     final isBottom = ratio >= 0.85;
     final label = _allLabels[index];
+    debugPrint('TAGTRACK: STATE: _isDragging=$_isDragging, index=$index, label=$label, isBottom=$isBottom');
 
     setState(() {
       _hoverLabel = label;
       _showAddHint = isBottom;
       _dragY = clampedY;
+      // 计算弧线上对应点的 X 坐标（圆方程）
+      _dragArcX = _circleCenter.dx + _arcRadius * cos(theta);
     });
 
     if (isBottom) {
@@ -146,6 +155,7 @@ class _TagTrackState extends State<TagTrack> {
       width: 40,
       height: screenSize.height,
       child: Stack(
+        clipBehavior: Clip.none,  // 允许浮层溢出到左侧
         children: [
           // 弧线绘制：用 OverflowBox 溢出到全屏
           Positioned.fill(
@@ -196,27 +206,38 @@ class _TagTrackState extends State<TagTrack> {
               child: const SizedBox.expand(),
             ),
           ),
-          // 标签浮层
-          Positioned.fill(
-            child: _isDragging
-                ? Stack(
-                    children: [
-                      if (_hoverLabel != null && !_showAddHint)
-                        Positioned(
-                          top: _dragY - ws.s(12),
-                          left: -ws.s(60),
-                          child: _buildLabelBubble(_hoverLabel!, ws),
-                        ),
-                      if (_showAddHint)
-                        Positioned(
-                          top: _dragY - ws.s(30),
-                          left: -ws.s(70),
-                          child: _buildAddBubble(ws),
-                        ),
-                    ],
-                  )
-                : const SizedBox.shrink(),
-          ),
+          // 标签浮层 — 拖拽时渲染
+          // 浮层也放在 OverflowBox 中，使用全屏坐标系
+          // 气泡沿弧线运动，且气泡右边缘紧贴弧线左侧
+          if (_isDragging)
+            Positioned.fill(
+              child: OverflowBox(
+                minWidth: screenSize.width,
+                maxWidth: screenSize.width,
+                minHeight: screenSize.height,
+                maxHeight: screenSize.height,
+                alignment: Alignment.topLeft,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (_hoverLabel != null && !_showAddHint)
+                      Positioned(
+                        top: _dragY - ws.s(12),
+                        // 气泡右边缘 = 弧线点 X 向左偏移 29px (弧线半宽5 + 间隙24)
+                        // right 从全屏右边缘算起 = 屏幕宽度 - 气泡右边缘X
+                        right: screenSize.width - _dragArcX + 29.0,
+                        child: _buildLabelBubble(_hoverLabel!, ws),
+                      ),
+                    if (_showAddHint)
+                      Positioned(
+                        top: _dragY - ws.s(30),
+                        right: screenSize.width - _dragArcX + 29.0,
+                        child: _buildAddBubble(ws),
+                      ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -224,16 +245,16 @@ class _TagTrackState extends State<TagTrack> {
 
   Widget _buildLabelBubble(String label, WearScale ws) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: ws.s(10), vertical: ws.s(6)),
+      padding: EdgeInsets.symmetric(horizontal: ws.s(8), vertical: ws.s(4)),
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(ws.s(10)),
+        color: const Color(0xFF6C63FF).withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(ws.s(8)),
       ),
       child: Text(label,
           style: TextStyle(
-              fontSize: ws.sp(12),
-              color: Colors.white,
-              fontWeight: FontWeight.bold)),
+              fontSize: ws.sp(10),
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w500)),
     );
   }
 

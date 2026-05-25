@@ -121,7 +121,7 @@ return Scaffold(
 );
 ```
 
-### TagTrack — Frosted-Glass Arc Track (v1.8.2+)
+### TagTrack — Frosted-Glass Arc Track (v1.8.4+)
 
 - **Container:** `SizedBox(width:40, height:screenHeight)` — limits touch zone to right edge
 - **Arc painting:** `OverflowBox(minWidth:screenWidth)` extends `CustomPaint` to full screen
@@ -134,6 +134,7 @@ return Scaffold(
 - **Bottom zone:** 85%+ of arc → 2s hold triggers "添加订阅"
 - **Architecture (CRITICAL):** TagTrack's CustomPaint uses `OverflowBox` so the arc is drawn at true screen-global coordinates. This ensures **identical rendering on Web, emulator, and real hardware** — no coordinate translation bugs.
 - **Gesture layer (v1.8.2 fix):** A `GestureDetector` with `SizedBox.expand()` is placed between the arc CustomPaint and the label overlay. Handlers: `onVerticalDragStart` → enables drag mode, `onVerticalDragUpdate` → maps Y to tag label, `onVerticalDragEnd` → commits selection, `onTapUp` → single-tap commit. The GestureDetector is at the third child position in the inner Stack (after arc OverFlowBox and before label overlay), ensuring it catches all gestures before they reach the label layer.
+- **标签气泡 (v1.8.4):** 浮层也放在 `OverflowBox` + `Stack` 中使用全屏坐标系。气泡用 `Positioned(top: _dragY - 12, right: screenSize.width - _dragArcX + 29)` 定位，其中 `_dragArcX = cx + R*cos(θ)` 在 `_updateFromY()` 中同步计算。气泡右边缘距弧线左侧 24px 间隙，沿弧线运动（X 和 Y 同步变化）。轻量化样式：字号 10sp, alpha 0.5, w500。
 
 ### Web Debug — MediaQuery Override
 

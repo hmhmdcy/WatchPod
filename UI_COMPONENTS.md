@@ -26,7 +26,7 @@
 | body | 12 | normal | Episode titles |
 | subtitle | 11 | normal | Author names |
 | caption | 9-10 | normal | Timestamps, hints |
-| arc-label | 12 | bold | TagTrack floating label bubble |
+|| arc-label | 10 | w500 | TagTrack floating label bubble (v1.8.4: 轻量化) |
 
 ### Virtual Tokens
 
@@ -123,7 +123,7 @@ Stack(
 
 ## TagTrack — Right Edge Frosted-Glass Arc Track
 
-### Architecture (v1.8.2+)
+### Architecture (v1.8.4+)
 
 ```
 SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
@@ -142,7 +142,17 @@ SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
        │          onVerticalDragUpdate → _updateFromY(→ hover label)
        │          onVerticalDragEnd → _commitLabel()
        │          onTapUp → _commitLabel()
-       └─ Positioned.fill (label overlays when dragging)
+       └─ Positioned.fill (v1.8.4: OverflowBox + Stack for label overlays)
+           └─ OverflowBox(minWidth:screenWidth)  ← 全屏坐标系
+               └─ Stack
+                   └─ Positioned(
+                        top: _dragY - 12,
+                        right: screenWidth - _dragArcX + 29,
+                      )
+                      └─ _buildLabelBubble(label)
+                         - 气泡沿弧线运动: _dragArcX = cx + R*cos(θ)
+                         - 气泡右边缘紧贴弧线左侧, 24px 间隙
+                         - 轻量化样式: 字号 10sp, alpha 0.5, w500
 ```
 
 ### Key Design Decisions
@@ -158,8 +168,8 @@ SizedBox(width:40, height:screenHeight)    ← touch zone (40dp wide)
 ### Interaction Model
 
 - **Idle state:** Arc visible on right edge (frosted glass, 10dp)
-- **Touch near arc** (within 30dp of nearest point): Activates drag — white slider dot (6dp radius) + purple floating label bubble
-- **Drag:** Labels change as slider passes through each tag zone: "全部" → [tag1] → [tag2] → ...
+- **Touch near arc** (within 30dp of nearest point): Activates drag — white slider dot (6dp radius) + purple floating label bubble (v1.8.4: 气泡沿弧线运动，右边缘紧贴弧线左侧，轻量化样式不再抢主内容焦点)
+- **Drag:** Labels change as slider passes through each tag zone: "全部" → [tag1] → [tag2] → ... (v1.8.4: 气泡跟随弧线轨迹，X 和 Y 同步变化)
 - **Bottom 85%+:** 2s hold → purple glow + "添加订阅" bubble → auto-navigate to SettingsScreen
 - **Lift:** Commits selected tag as active filter
 

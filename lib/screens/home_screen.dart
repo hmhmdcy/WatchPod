@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import '../models/podcast_subscription.dart';
 import '../widgets/podcast_tile.dart';
 import '../widgets/glass_components.dart';
@@ -43,7 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSubscriptions() async {
-    if (kIsWeb) {
+    if (kIsWeb || !Platform.isAndroid) {
+      // Web / Linux Desktop 调试：注入模拟播客数据
       // Web 调试：注入模拟播客数据
       _subscriptions = [
         PodcastSubscription(

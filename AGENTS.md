@@ -18,13 +18,13 @@ WHEN task involves:
 - **version tracking** → read CHANGELOG.md, update it after changes
 - **environment config / install** → log to ~/.hermes/deployment-log/
 - **screen adapt / layout fix** → see WearScale in lib/widgets/wear_scale.dart
-- **TagTrack arc slider touch issues** → read docs/KNOWN_BUGS.md (#1)
+- **TagTrack arc slider touch issues** → read docs/KNOWN_BUGS.md (已归档，详见 CHANGELOG.md v1.8.2 Fixed)
 
 ## KEY CROSS-REFERENCES
 
 - **watchpod-ui skill**: Contains the complete layout specification for all screens. Load this FIRST before any UI work. It encodes the top-bar + full-content pattern, WearScale usage rules, arc track spec, and all current constraints.
 - **WearScale**: Adaptive sizing system. `WearScale.of(context).sp(12)` scales 12px to fit screens. **Base is 280 dp**. All hardcoded sizes must use this.
-- **TagTrack** (`lib/widgets/home_tag_track.dart`): Frosted-glass arc track glued to the right circular screen edge. CustomPaint arc (10dp, alpha ~0.69), OverflowBox full-screen canvas, GestureDetector vertical drag for tag switching, 2s bottom hover to add subscription. Uses circle equation `(centerX + R*cos(θ), centerY + R*sin(θ))` from -45° to 45°. Replaces the old right-side panel and thin arc line.
+- **TagTrack** (`lib/widgets/home_tag_track.dart`): Frosted-glass arc track glued to the right circular screen edge. CustomPaint arc (10dp, alpha ~0.69), OverflowBox full-screen canvas, GestureDetector vertical drag for tag switching, 2s bottom hover to add subscription. Uses circle equation `(centerX + R*cos(θ), centerY + R*sin(θ))` from -45° to 45°. **v1.8.4: 标签气泡沿弧线运动** — `_dragArcX` 用圆方程同步计算，气泡右边缘紧贴弧线左侧 (24px 间隙)，轻量化样式 (10sp, alpha 0.5, w500)。Replaces the old right-side panel and thin arc line.
 - **HomeScreen**: `GlassBackground → Stack [SafeArea → WatchSafeArea(内容), TagTrack(outside SafeArea)]`. Full-width centered content + right-side arc track overlay. TagTrack in outermost Stack to avoid SafeArea padding clipping touch zone. See pitfall #15.
 - **Web debug** (`main.dart` `_WebDebugShell`): Wraps screens in `ClipRRect(circular)` + `MediaQuery(size: Size(watchSize, watchSize))` override so child widgets read correct circular dimensions on Web. No bottom nav bar.
 - **SettingsScreen**: AppBar centered — 3 glass icon buttons (←, 🔄, +) in AppBar.title. Below: full-height hot podcast list. No info bar.
@@ -51,4 +51,5 @@ WHEN task involves:
 14. **TagTrack must have GestureDetector (v1.8.2)**: The arc is purely visual without a gesture handler. `TagTrack.build()` must always include a `GestureDetector` with `onVerticalDragStart/Update/End` and `onTapUp`. Without it, drag/tap on the arc has zero effect.
 15. **TagTrack must be outside SafeArea (v1.8.2)**: On round screens, `SafeArea` adds padding that shifts the 40dp touch zone away from the screen right edge. In `HomeScreen.build()`, TagTrack's `Positioned.fill` must be in the outer `Stack` (outside `SafeArea`), not nested inside it.
 16. **Linux Desktop: xwd NOT scrot/ffmpeg (v1.8.3)**: In WSL2/WSLg, standard screenshot tools capture WSL-internal display (blank/black). Use `xwd` to read pixels from X11 shared memory directly. Workflow: `xdotool search --name watchpod` → `xwd -id <ID> -out /tmp/wp.xwd` → `convert /tmp/wp.xwd /tmp/wp.png` → `vision_analyze`.
-17. **Linux Desktop: cleanup after use (v1.8.3)**: Always run `pkill -f 'watchpod.*linux'` after debugging. Leftover processes accumulate and consume GPU/CPU resources. The 466×466 undecorated window persists on the Windows desktop until killed.
+17. **Linux Desktop: cleanup after use (v1.8.3)**: Always run `pkill -f 'watchpod.*linux'` after debugging. Leftover processes accumulate and consume GPU/CPU resources. The 466×466 undecorated window persists on the Windows desktop until killed. **v1.8.4:** `pkill -f` may miss processes under shell protection. Use `kill -9 <PID>` with explicit PID list when `pkill` leaves survivors.
+18. **标签气泡弧线定位 (v1.8.4)**: 气泡 `Positioned(top: _dragY, right: screenSize.width - _dragArcX + 29)` 中 `_dragArcX` 在 `_updateFromY()` 中用圆方程 `cx + R*cos(θ)` 同步计算。**不要直接用 `left: _dragArcX - N`** —— 气泡有动态宽度，用 `left` 会让气泡内容与弧线重叠。必须用 `right` 从屏幕右边缘算，确保气泡右边缘紧贴弧线左侧。气泡样式已轻量化（10sp, alpha 0.5），不要改回 12sp/bold。
