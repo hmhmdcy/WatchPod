@@ -1,5 +1,22 @@
 # WatchPod Changelog
 
+## v1.9.3 — 2026-05-26
+
+### Added
+- **EpisodePreviewSheet 重构：BottomSheet → 居中圆形弹窗** (`lib/widgets/episode_preview_sheet.dart`):
+  - 使用 `PageRouteBuilder(opaque: false)` + `CircularScreenClipper` 替代 `showModalBottomSheet`，弹窗边缘跟随圆形屏幕
+  - 组件化重构：提取为 Widget 类结构，入口 `EpisodePreviewSheet.show()`
+  - 新增 `CircularScreenClipper` 通用圆形裁剪组件 (`lib/widgets/circular_screen_clipper.dart`)
+  - 内容精简：仅显示播客标题 + 半透明订阅按钮 + 最新节目列表（无缩略图）
+  - 播客标题取自实际播客名称（如"科技早知道"）
+  - 动态高度：内容少时自适应，内容多时限制高度并内部滚动，滑到底时底部完整可见
+
+### Changed
+- **SettingsScreen 添加 Linux Desktop 调试支持** (`lib/screens/settings_screen.dart`):
+  - `_loadTopPodcasts` 增加 `Platform.isLinux` 模拟数据分支
+  - `_previewPodcast` 增加 Linux 模拟 Episode 数据，无需真实 RSS 请求即可触发预览弹窗
+  - 完善 mock 数据：20 期不同标题节目，覆盖滚动测试
+
 ## v1.9.2 — 2026-05-25
 
 ### Fixed

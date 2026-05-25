@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import '../services/storage_service.dart';
 import '../services/rss_service.dart';
 import '../services/top_podcast_service.dart';
 import '../models/podcast_subscription.dart';
+import '../models/episode.dart';
 import '../widgets/glass_components.dart';
 import '../widgets/wear_scale.dart';
 import '../widgets/hot_podcast_list.dart';
@@ -50,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadTopPodcasts() async {
-    if (kIsWeb) {
+    if (kIsWeb || Platform.isLinux) {
       _topPodcasts = [
         TopPodcastItem(name: '科技早知道', author: '硅谷徐老师', coverUrl: 'https://picsum.photos/seed/pod1/200/200', lookupId: '1', feedUrl: 'https://example.com/feed1.xml', summary: '聚焦科技前沿，解读行业动态'),
         TopPodcastItem(name: '忽左忽右', author: 'JustPod', coverUrl: 'https://picsum.photos/seed/pod2/200/200', lookupId: '2', feedUrl: 'https://example.com/feed2.xml', summary: '文化沙龙类节目'),
@@ -205,13 +207,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _previewPodcast(TopPodcastItem item) async {
     if (item.feedUrl == null) return;
+    // Linux Desktop 调试：模拟数据，跳过 RSS 请求
+    if (Platform.isLinux) {
+      if (!mounted) return;
+      EpisodePreviewSheet.show(
+        context,
+        item: item,
+        episodes: List.generate(20, (i) => Episode(
+          id: 'mock-ep-${item.lookupId}-$i',
+          podcastId: 'mock-${item.lookupId}',
+          title: '第${i + 1}期：${['AI 时代来临', '科技前沿', '文化漫谈', '生活观察', '深度访谈', '读书笔记', '商业内幕', '历史今天', '未来展望', '特别节目', '行业分析', '人物专访', '技术解读', '创业故事', '市场洞察', '产品思考', '趋势预测', '实战经验', '开源之旅', '年终盘点'][i]}',
+          description: '',
+          audioUrl: '',
+          imageUrl: item.coverUrl,
+          duration: Duration(minutes: 30 + i * 5),
+          publishedAt: DateTime.now().subtract(Duration(days: i * 7)),
+        )),
+        onSubscribe: _subscribeToFeed,
+      );
+      return;
+    }
     try {
       final result = await _rssService.parseFeed(item.feedUrl!);
       if (!mounted) return;
-      showEpisodePreview(
+      EpisodePreviewSheet.show(
         context,
         item: item,
-        podcast: result.podcast,
         episodes: result.episodes,
         onSubscribe: _subscribeToFeed,
       );
