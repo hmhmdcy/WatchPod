@@ -256,7 +256,7 @@ Scaffold(
 
 **IMPORTANT (v1.8.5):** No SafeArea, no WatchSafeArea. Content is now inside Column directly. The multi-select bottom bar stays inside the Column, below the Expanded list. The TopActionBar icon and callback switch based on `_selectionMode`.
 
-## PlayerScreen Layout (v1.8.5+)
+## PlayerScreen Layout (v1.8.6+)
 
 **TopActionBar pattern (single button):** Same Stack structure as EpisodesScreen.
 
@@ -284,6 +284,94 @@ Scaffold(
   ),
 );
 ```
+
+### 底部控制按钮 — 弧形排列方案 (v1.8.6)
+
+三个控制按钮（-15 / play / +15）沿底部弧形排列，避免圆形屏幕左右两侧裁切：
+
+```dart
+// ─── 播放控制按钮（弧形排列） ───
+// -15 · play · +15 紧凑居中，两侧按钮上移呈弧线感
+// 整体底部留足安全距离，避免被圆形边界裁切
+Padding(
+  padding: EdgeInsets.only(bottom: ws.s(16)),   // ← 整体安全距离
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      // -15 — 上移 8dp 形成弧线上方
+      Padding(
+        padding: EdgeInsets.only(bottom: ws.s(8)),
+        child: Container(
+          width: ws.s(36), height: ws.s(36),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(ws.s(18)),
+          ),
+          child: Center(
+            child: Text('-15', style: TextStyle(
+              fontSize: ws.sp(10), color: Colors.white,
+              fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ),
+      SizedBox(width: ws.s(6)),
+      // 播放/暂停（紫色，居中偏大，弧线最底部）
+      GestureDetector(
+        onTap: () => audioService.togglePlayPause(),
+        child: Container(
+          width: ws.s(52), height: ws.s(52),
+          decoration: BoxDecoration(
+            color: const Color(0xFF6C63FF).withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(ws.s(26)),
+          ),
+          child: Center(
+            child: Icon(
+              audioService.isPlaying || audioService.isBuffering
+                  ? Icons.pause : Icons.play_arrow,
+              color: Colors.white, size: ws.s(26),
+            ),
+          ),
+        ),
+      ),
+      SizedBox(width: ws.s(6)),
+      // +15 — 上移 8dp 形成弧线上方
+      Padding(
+        padding: EdgeInsets.only(bottom: ws.s(8)),
+        child: Container(
+          width: ws.s(36), height: ws.s(36),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(ws.s(18)),
+          ),
+          child: Center(
+            child: Text('+15', style: TextStyle(
+              fontSize: ws.sp(10), color: Colors.white,
+              fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ),
+    ],
+  ),
+)
+```
+
+### 方案演进（避免重复踩坑）
+
+| # | 方案 | 结果 | 根因 |
+|---|------|------|------|
+| 1 | `LayoutBuilder` + 圆方程 | ❌ 按钮渲染到屏幕外 | `LayoutBuilder` 在 `Column`/`Padding` 内获取的 `constraints.maxWidth` = Column 可用宽度 ≠ 全屏宽度 |
+| 2 | `Stack` + `Positioned(left:14 / right:14)` | ❌ 仍然被圆边界裁切 | 233dp 屏幕太窄，>14dp 的偏移量就在圆形裁切区外 |
+| 3 | `Row` + 间距调整, 底部 padding=8 | ❌ 继续被裁切 | 底部安全距离不足 |
+| 4 | **`Row` 紧凑居中 + 两侧上移 8dp + 底部 16dp** | ✅ **100% 可见** | 6dp 间距让三个按钮紧贴底部的中线区域，偏移仅 8dp 避免超出圆形范围 |
+
+**核心原则：** PlayerScreen 底部控制栏绝对不要在 `Column`/`Padding` 内的 `LayoutBuilder` 做全屏坐标计算。优先用 `Row(mainAxisAlignment: MainAxisAlignment.center)` + 相对 `Padding` 偏移，简单可靠。
+
+| Button | Size | Style | Position |
+|--------|------|-------|----------|
+| -15/+15 | 36×36dp, 10sp text, radius 18dp | Glass (white 0.08) | 上移 8dp (弧线两侧) |
+| Play/Pause | 52×52dp, 26sp icon, radius 26dp | Primary #6C63FF alpha 0.6 | 居中 (弧线底部) |
+| Button gap | 6dp | — | 紧凑居中 |
+| Bottom safe | 16dp padding | — | 整体安全距离 |
 
 Content: cover (68dp) + title + progress slider + -15/play/+15 controls. All centered vertically with Spacer at top.
 

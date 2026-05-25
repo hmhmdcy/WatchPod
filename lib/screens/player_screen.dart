@@ -130,14 +130,18 @@ class PlayerScreen extends StatelessWidget {
                     ),
                     SizedBox(height: ws.s(8)),
 
-                    // ─── 播放控制按钮 ───
+                    // ─── 播放控制按钮（弧形排列） ───
+                    // -15 · play · +15 紧凑居中，两侧按钮上移呈弧形
+                    // 整体底部留足安全距离，避免被圆形边界裁切
                     Padding(
-                      padding: EdgeInsets.only(bottom: ws.s(8)),
+                      padding: EdgeInsets.only(bottom: ws.s(16)),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // 后退 15s
-                          GestureDetector(
+                        // -15 — 上移 8dp 形成弧形感
+                        Padding(
+                          padding: EdgeInsets.only(bottom: ws.s(8)),
+                          child: GestureDetector(
                             onTap: () {
                               final newPos = pos - const Duration(seconds: 15);
                               audioService.seek(newPos < Duration.zero
@@ -145,61 +149,72 @@ class PlayerScreen extends StatelessWidget {
                                   : newPos);
                             },
                             child: Container(
-                              padding: EdgeInsets.all(ws.s(10)),
+                              width: ws.s(36),
+                              height: ws.s(36),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(ws.s(20)),
+                                borderRadius: BorderRadius.circular(ws.s(18)),
                               ),
-                              child: Text('-15',
-                                  style: TextStyle(
-                                      fontSize: ws.sp(13),
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold)),
+                              child: Center(
+                                child: Text('-15',
+                                    style: TextStyle(
+                                        fontSize: ws.sp(10),
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold)),
+                              ),
                             ),
                           ),
-                          SizedBox(width: ws.s(12)),
-
-                          // 播放/暂停
-                          GestureDetector(
-                            onTap: () => audioService.togglePlayPause(),
-                            child: Container(
-                              padding: EdgeInsets.all(ws.s(12)),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF6C63FF).withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(ws.s(24)),
-                              ),
+                        ),
+                        SizedBox(width: ws.s(6)),
+                        // 播放/暂停
+                        GestureDetector(
+                          onTap: () => audioService.togglePlayPause(),
+                          child: Container(
+                            width: ws.s(52),
+                            height: ws.s(52),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6C63FF).withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(ws.s(26)),
+                            ),
+                            child: Center(
                               child: Icon(
                                 audioService.isPlaying || audioService.isBuffering
                                     ? Icons.pause
                                     : Icons.play_arrow,
                                 color: Colors.white,
-                                size: ws.s(24),
+                                size: ws.s(26),
                               ),
                             ),
                           ),
-                          SizedBox(width: ws.s(12)),
-
-                          // 前进 15s
-                          GestureDetector(
+                        ),
+                        SizedBox(width: ws.s(6)),
+                        // +15 — 上移 8dp 形成弧形感
+                        Padding(
+                          padding: EdgeInsets.only(bottom: ws.s(8)),
+                          child: GestureDetector(
                             onTap: () {
                               final newPos = pos + const Duration(seconds: 15);
                               audioService.seek(newPos > dur ? dur : newPos);
                             },
                             child: Container(
-                              padding: EdgeInsets.all(ws.s(10)),
+                              width: ws.s(36),
+                              height: ws.s(36),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(ws.s(20)),
+                                borderRadius: BorderRadius.circular(ws.s(18)),
                               ),
-                              child: Text('+15',
-                                  style: TextStyle(
-                                      fontSize: ws.sp(13),
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold)),
+                              child: Center(
+                                child: Text('+15',
+                                    style: TextStyle(
+                                        fontSize: ws.sp(10),
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold)),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
                     ),
                     ],
                   ),

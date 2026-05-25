@@ -1,5 +1,21 @@
 # WatchPod Changelog
 
+## v1.8.6 — 2026-05-25
+
+### Fixed
+- **PlayerScreen 底部 -15/+15 按钮被圆形边界裁切** — 三个控制按钮在圆形屏幕底部靠两边的按钮总是被圆边界裁切。经过 4 次方案迭代：
+  - ❌ LayoutBuilder + 圆方程：`LayoutBuilder` 在 `Column`/`Padding` 内获取的是 Column 可用宽度而非全屏宽度，圆方程计算出的按钮位置偏移到屏幕外
+  - ❌ Stack + `Positioned(left:14 / right:14)`：233dp 逻辑屏幕太窄，14dp 偏移量仍然在圆形裁切区外
+  - ❌ Row + 间距 + 底部 padding 不足：继续被裁切
+  - ✅ **Row 紧凑居中 + 两侧按钮上移 8dp + 底部 16dp padding**：`-15` 和 `+15` 用 `Padding(bottom: ws.s(8))` 上移形成弧线感（"∩"形），play 按钮 52dp 居中偏大，间距 6dp，整体底部 `Padding(bottom: ws.s(16))` 提供安全距离。全部 100% 可见无裁切。
+- **LayoutBuilder → Row 方案原则**：PlayerScreen 底部控制栏绝对不要在 `Column`/`Padding` 内的 `LayoutBuilder` 做全屏坐标计算——`constraints.maxWidth` = Column 可用宽度 ≠ 全屏宽度。优先用 `Row` + `mainAxisAlignment: MainAxisAlignment.center` + 相对 padding 偏移，简单可靠。
+
+### Changed
+- **-15/+15 按钮尺寸缩小**：36×36dp（原来是 `padding: all(10)` 无固定尺寸），文字 10sp（原来 13sp），borderRadius 18dp
+- **play 按钮增大居中**：52×52dp（原来 padding: all(12)），图标 26sp（原来 24sp），紫色 #6C63FF alpha 0.6
+- **按钮间距缩小**：从 12dp 减到 6dp，确保紧凑居中
+- **底部 padding 增大**：从 8dp 增大到 16dp，提供安全距离
+
 ## v1.8.5 — 2026-05-25
 
 ### Added
