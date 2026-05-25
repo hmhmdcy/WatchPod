@@ -1,17 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/storage_service.dart';
 import '../services/rss_service.dart';
 import '../services/top_podcast_service.dart';
 import '../models/podcast_subscription.dart';
-import '../models/episode.dart';
 import '../widgets/glass_components.dart';
 import '../widgets/wear_scale.dart';
-import '../widgets/settings_add_bar.dart';
 import '../widgets/hot_podcast_list.dart';
-import '../widgets/settings_info_bar.dart';
 import '../widgets/episode_preview_sheet.dart';
+import 'tag_picker_page.dart';
 
 /// 添加订阅页面
 /// 新布局：顶部操作栏(添加订阅+刷新按钮) + 热门播客列表(最大化)
@@ -228,23 +225,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<List<String>?> _showTagPicker(
     PodcastSubscription podcast,
     List<String> suggested,
-  ) async {
-    return Navigator.push<List<String>>(
+  ) {
+    return TagPickerPage.show(
       context,
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => _TagPickerPage(podcast: podcast, suggested: suggested),
-      ),
+      podcast: podcast,
+      suggested: suggested,
     );
   }
-
-  Future<String> _getStorageInfo() =>
-      TopPodcastService.getStorageInfo(widget.storageService.downloadDir);
 
   @override
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
-    final borderRadius = ws.s(18);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -323,213 +314,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     brighter: true,
                   ),
                 ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── _TagPickerPage（全屏标签选择）─ 仍作为私有页面保留 ───
-
-class _TagPickerPage extends StatefulWidget {
-  final PodcastSubscription podcast;
-  final List<String> suggested;
-
-  const _TagPickerPage({required this.podcast, required this.suggested});
-
-  @override
-  State<_TagPickerPage> createState() => _TagPickerPageState();
-}
-
-class _TagPickerPageState extends State<_TagPickerPage> {
-  late List<String> _selected;
-
-  @override
-  void initState() {
-    super.initState();
-    _selected = List<String>.from(widget.suggested);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ws = WearScale.of(context);
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F23),
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.close, size: ws.s(20), color: Colors.white),
-              SizedBox(width: ws.s(6)),
-              Text(
-                '选择标签',
-                style: TextStyle(
-                  fontSize: ws.fs(14),
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: GlassBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ws.s(16),
-                  vertical: ws.s(4),
-                ),
-                child: Text(
-                  widget.podcast.title,
-                  style: TextStyle(
-                    fontSize: ws.sp(12),
-                    color: Colors.grey[400],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(height: ws.s(4)),
-              if (widget.suggested.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.only(bottom: ws.s(8)),
-                  child: Wrap(
-                    spacing: ws.s(4),
-                    runSpacing: ws.s(2),
-                    alignment: WrapAlignment.center,
-                    children: [
-                      Text(
-                        '已推荐: ',
-                        style: TextStyle(
-                          fontSize: ws.sp(10),
-                          color: const Color(0xFF6C63FF),
-                        ),
-                      ),
-                      ...widget.suggested.map(
-                        (tag) => Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: ws.s(6),
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF6C63FF,
-                            ).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(ws.s(6)),
-                          ),
-                          child: Text(
-                            tag,
-                            style: TextStyle(
-                              fontSize: ws.sp(9),
-                              color: const Color(0xFF6C63FF),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: LayoutBuilder(
-                    builder: (ctx, constraints) {
-                      final tagWidth =
-                          (constraints.maxWidth - ws.s(12) * 3) / 4;
-                      return Wrap(
-                        spacing: ws.s(6),
-                        runSpacing: ws.s(6),
-                        alignment: WrapAlignment.center,
-                        children: PodcastSubscription.presetTags.map((tag) {
-                          final isSelected = _selected.contains(tag);
-                          return GestureDetector(
-                            onTap: () => setState(() {
-                              if (isSelected) {
-                                _selected.remove(tag);
-                              } else {
-                                _selected.add(tag);
-                              }
-                            }),
-                            child: Container(
-                              width: tagWidth,
-                              padding: EdgeInsets.symmetric(vertical: ws.s(8)),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(
-                                        0xFF6C63FF,
-                                      ).withValues(alpha: 0.4)
-                                    : Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(ws.s(14)),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? const Color(0xFF6C63FF)
-                                      : Colors.white.withValues(alpha: 0.1),
-                                ),
-                              ),
-                              child: Text(
-                                tag,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: ws.sp(12),
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.white70,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(ws.s(16)),
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context, _selected),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(vertical: ws.s(12)),
-                    decoration: BoxDecoration(
-                      color: _selected.isEmpty
-                          ? Colors.grey.withValues(alpha: 0.2)
-                          : const Color(0xFF6C63FF).withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(ws.s(22)),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check, size: ws.s(16), color: Colors.white),
-                        SizedBox(width: ws.s(6)),
-                        Text(
-                          _selected.isEmpty
-                              ? '跳过标签'
-                              : '确定 (${_selected.length})',
-                          style: TextStyle(
-                            fontSize: ws.sp(13),
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ),
             ],
           ),

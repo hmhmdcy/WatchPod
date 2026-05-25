@@ -9,6 +9,7 @@ import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/episodes_screen.dart';
 import 'screens/player_screen.dart';
+import 'screens/tag_picker_page.dart';
 import 'models/podcast_subscription.dart';
 import 'models/episode.dart';
 
@@ -127,7 +128,7 @@ class _WebDebugShell extends StatelessWidget {
   }
 }
 
-/// Linux Desktop 四页导航：Home / Episodes / Player / Settings
+/// Linux Desktop 四页导航：Home / Episodes / Player / Settings / TagPicker
 class _LinuxDebugPages extends StatefulWidget {
   final AudioService audioService;
   final StorageService storageService;
@@ -155,6 +156,15 @@ class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
     tags: ['科技', '中文'],
   );
 
+  static final _mockPodcastWithTags = PodcastSubscription(
+    id: 'mock-2',
+    title: '商业就是这样',
+    feedUrl: 'https://example.com/feed2.xml',
+    author: '商业团队',
+    imageUrl: 'https://picsum.photos/seed/pod2/200/200',
+    tags: ['商业', '投资'],
+  );
+
   @override
   Widget build(BuildContext context) {
     return IndexedStack(
@@ -173,6 +183,11 @@ class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
         ),
         PlayerScreen(audioService: widget.audioService),
         SettingsScreen(storageService: widget.storageService),
+        // TagPickerPage — 公开类，可直接引用
+        TagPickerPage(
+          podcast: _mockPodcastWithTags,
+          suggested: _mockPodcastWithTags.tags,
+        ),
       ],
     );
   }

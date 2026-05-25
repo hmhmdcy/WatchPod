@@ -2,6 +2,10 @@
 
 ## v1.8.6 — 2026-05-25
 
+### Changed
+- **TagPickerPage: 从 settings_screen.dart 提取为独立公开类** (`lib/screens/tag_picker_page.dart`) — 新增独立文件，公开 `TagPickerPage` 类 + `static show()` 便捷路由。`settings_screen.dart` 从 545 行降至 324 行。warning 从 6 降为 0。`main.dart` Linux Debug 可直接 `TagPickerPage(...)` 引用，不再需要 `debugTagPicker()` 桥接函数。其他页面(HomeScreen/TagTrack)不受影响。
+- **settings_screen.dart 清理** — 删除未使用 import：`dart:io`、`Episode`、`settings_add_bar`、`settings_info_bar`；删除未使用 `_getStorageInfo()` 和 `borderRadius` 变量。
+
 ### Fixed
 - **PlayerScreen 底部 -15/+15 按钮被圆形边界裁切** — 三个控制按钮在圆形屏幕底部靠两边的按钮总是被圆边界裁切。经过 4 次方案迭代：
   - ❌ LayoutBuilder + 圆方程：`LayoutBuilder` 在 `Column`/`Padding` 内获取的是 Column 可用宽度而非全屏宽度，圆方程计算出的按钮位置偏移到屏幕外

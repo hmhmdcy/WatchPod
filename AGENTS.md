@@ -19,6 +19,7 @@ WHEN task involves:
 - **environment config / install** → log to ~/.hermes/deployment-log/
 - **screen adapt / layout fix** → see WearScale in lib/widgets/wear_scale.dart
 - **TagTrack arc slider touch issues** → read docs/KNOWN_BUGS.md (已归档，详见 CHANGELOG.md v1.8.2 Fixed)
+- **TagPickerPage / 标签选择** → read `lib/screens/tag_picker_page.dart` + UI_COMPONENTS.md TagPickerPage section
 
 ## KEY CROSS-REFERENCES
 
@@ -34,6 +35,7 @@ WHEN task involves:
 - **HotPodcastList**: `lib/widgets/hot_podcast_list.dart`. Cover(42dp) + title(15sp) + subscribe(44dp). Optional `showTitle` flag.
 - **EpisodesScreen**: v1.8.5 重构为 **TopActionBar** + **Stack** 模式。无 AppBar。单按钮（多选模式→close/正常→arrow_back）用 TopActionBar 组件。无 SafeArea，无 WatchSafeArea。多选底部操作栏在 Column 内位于列表下方。
 - **StorageService**: Silently returns [] on parse failure. No migration support.
+- **TagPickerPage** (`lib/screens/tag_picker_page.dart`): v1.8.6 从 settings_screen.dart 提取为独立公开页面。全屏标签选择，添加订阅流程中使用 `TagPickerPage.show()`。仍使用旧 AppBar 方案（未迁移到 TopActionBar）。标签数据源：`PodcastSubscription.presetTags`。
 
 ## KEY PITFALLS
 

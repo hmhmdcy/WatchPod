@@ -45,8 +45,9 @@ Since v1.8.1, TWO layout patterns are used depending on screen:
 |--------|---------|---------|
 | **HomeScreen** | Stack + right arc track overlay | Full-width content (centered) + TagTrack overlay |
 | **SettingsScreen** | Stack + TopActionBar overlay + SafeArea | No AppBar. Buttons float in TopActionBar. `SafeArea` instead of `WatchSafeArea`. |
-| **EpisodesScreen** | AppBar centered buttons | Single back button in AppBar.title. `SafeArea` (v1.8.5) instead of `WatchSafeArea`. |
-| **PlayerScreen** | AppBar centered back button | Single back button. `SafeArea`. |
+| **EpisodesScreen** | Stack + TopActionBar overlay | Single centered button in TopActionBar (arrow_back / close). |
+| **PlayerScreen** | Stack + TopActionBar overlay + SafeArea | Single centered back button in TopActionBar. Center content in SafeArea. |
+| **TagPickerPage** | AppBar centered title | ✕ close + "选择标签" centerTitle. `SafeArea`. |
 
 ## HomeScreen Layout (v1.8.2+)
 
@@ -422,6 +423,16 @@ For accurate round-screen simulation, the `MediaQuery` override is **critical** 
 ### WatchSafeArea
 - Circular clip using `ClipPath` with circle equation.
 - Only wraps center content zone — top bar goes outside it.
+
+### TagPickerPage
+**File:** `lib/screens/tag_picker_page.dart`
+- 全屏标签选择页面，在添加订阅流程中使用 (`TagPickerPage.show()`)
+- 使用旧 AppBar 方案（`centerTitle: true`, `backgroundColor: Colors.transparent`, `extendBodyBehindAppBar: true`）
+- 标题 ✕ close + "选择标签" 居中可点
+- 标签网格：`LayoutBuilder` + `Wrap` + 4列自适应宽度，10个预设标签
+- 推荐标签行：`Wrap` + 小胶囊(9sp) + 紫色
+- 底部确认按钮：无选择时灰色"跳过标签"，有选择时紫色"确定 (N)"
+- 数据源：`PodcastSubscription.presetTags`
 
 ### Cache Behavior
 - TopPodcastService: 24h memory + file cache. `invalidateCache()` for manual refresh.

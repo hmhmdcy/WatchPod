@@ -46,8 +46,9 @@ lib/
 ├── screens/
 │   ├── home_screen.dart       # Stack layout: Positioned.fill content + right arc (~360 lines)
 │   ├── episodes_screen.dart   # Episode list: cache-first + silent RSS refresh
-│   ├── player_screen.dart     # Seekable Slider + play/pause + skip15
-│   └── settings_screen.dart   # AppBar centered (← 🔄 +) + full-height hot list (~350 lines)
+│   ├── player_screen.dart     # Seekable Slider + play/pause + skip15 arc controls
+│   ├── settings_screen.dart   # TopActionBar (← 🔄 +) + SafeArea + hot list (~324 lines)
+│   └── tag_picker_page.dart   # Fullscreen tag selection. AppBar centered ✕ + "选择标签"
 ├── services/
 │   ├── audio_service.dart
 │   ├── rss_service.dart
@@ -69,11 +70,11 @@ lib/
 
 ```
 / → HomeScreen
-  → SettingsScreen (add + browse hot podcasts)  [AppBar centered back]
-    → TagPickerPage (fullscreen tag selection)
+  → SettingsScreen (add + browse hot podcasts)  [TopActionBar ← 🔄 +]
+    → TagPickerPage (fullscreen tag selection)  [AppBar ✕ centered]
     → showEpisodePreview (bottom sheet)
-  → EpisodesScreen (tap podcast card)  [AppBar centered ← back]
-    → PlayerScreen (play episode)  [AppBar centered ← back]
+  → EpisodesScreen (tap podcast card)  [TopActionBar ← / ✕]
+    → PlayerScreen (play episode)  [TopActionBar ←]
 ```
 
 No deep linking, no named routes. Manual DI.
@@ -156,37 +157,40 @@ ClipRRect(
 ```
 This ensures `MediaQuery.of(context).size` in TagTrack returns the circular mask size (e.g. 577×577), NOT the full browser window (1280×720).
 
-### All Other Screens — AppBar Centered
+### All Other Screens — TopActionBar (v1.8.5+)
+
+EpisodesScreen, PlayerScreen, SettingsScreen all use TopActionBar instead of AppBar.
 
 ```dart
+// Pattern:
 Scaffold(
-  extendBodyBehindAppBar: true,
-  appBar: AppBar(
-    backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
-    scrolledUnderElevation: 0,
-    surfaceTintColor: Colors.transparent,
-    centerTitle: true,
-    automaticallyImplyLeading: false,
-    title: buttonsRow,  // ← centered, NOT in leading/actions
-  ),
   body: GlassBackground(
-    child: Column(
+    child: Stack(
       children: [
-        Expanded(child: WatchSafeArea(child: content)),
+        // Content (SafeArea for some screens)
+        Column/SafeArea(children: [...]),
+        // TopActionBar — float above content
+        TopActionBar(actions: [TopAction(child: ...), ...]),
       ],
     ),
   ),
 );
 ```
 
+### TagPickerPage — AppBar centered (未迁移)
+
+**File:** `lib/screens/tag_picker_page.dart`
+继承自旧设计，仍使用 AppBar，不在 TopActionBar 统一方案内。
+
 ### Per-Screen Button Spec
 
 | Screen | Layout | Normal mode buttons | Multi-select |
 |--------|--------|-------------------|-------------|
 | HomeScreen | Stack + arc track | Arc track (-45°~45°, 10dp glass) + floating label bubbles | N/A |
-| SettingsScreen | AppBar centered | [←] [🔄] [+] — 3 glass pill buttons | N/A |
-| EpisodesScreen | AppBar centered | [← 返回] — pill-style button | [✕ 退出选择] |
-| PlayerScreen | AppBar centered | [← 返回] — pill-style button | N/A |
+| SettingsScreen | Stack + TopActionBar | [←] [🔄] [+] — 3 glass circle buttons via TopActionBar | N/A |
+| EpisodesScreen | Stack + TopActionBar | [←] — single back button via TopActionBar | [✕ close] |
+| PlayerScreen | Stack + TopActionBar | [←] — single back button via TopActionBar | N/A |
+| TagPickerPage | AppBar centered | ✕ close + "选择标签" centered title | N/A |
 
 ## Refresh Button Flow
 
