@@ -144,7 +144,7 @@ class _LinuxDebugPages extends StatefulWidget {
 }
 
 class _LinuxDebugPagesState extends State<_LinuxDebugPages> {
-  int _currentPage = 0;
+  int _currentPage = 3;
 
   static final _mockPodcast = PodcastSubscription(
     id: 'mock-1',

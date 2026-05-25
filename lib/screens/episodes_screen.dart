@@ -8,7 +8,6 @@ import '../services/storage_service.dart';
 import '../services/rss_service.dart';
 import '../widgets/episode_tile.dart';
 import '../widgets/glass_components.dart';
-import '../widgets/watch_safe_area.dart';
 import '../widgets/wear_scale.dart';
 import 'player_screen.dart';
 
@@ -243,15 +242,15 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
         child: Column(
           children: [
             Expanded(
-              child: WatchSafeArea(
-                    child: _loading
-                        ? const Center(child: CircularProgressIndicator(color: Colors.white))
-                        : _error != null
-                            ? _buildError()
-                            : _episodes.isEmpty
-                                ? _buildEmpty()
-                                : _buildEpisodeList(),
-                  ),
+              child: SafeArea(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    : _error != null
+                        ? _buildError()
+                        : _episodes.isEmpty
+                            ? _buildEmpty()
+                            : _buildEpisodeList(),
+              ),
             ),
             // 底部操作栏（多选模式下显示）
             if (_selectionMode)

@@ -55,12 +55,15 @@ class HotPodcastList extends StatelessWidget {
           SizedBox(height: ws.s(4)),
           // 标题
           if (showTitle)
-            Text('🔥 苹果热门播客',
-                style: TextStyle(
-                    fontSize: ws.sp(12),
-                    color: Colors.grey,
-                    fontWeight: FontWeight.bold)),
-          SizedBox(height: ws.s(6)),
+            Padding(
+              padding: EdgeInsets.only(left: ws.s(4), top: ws.s(2)),
+              child: Text('🔥 苹果热门播客',
+                  style: TextStyle(
+                      fontSize: ws.sp(13),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold)),
+            ),
+          SizedBox(height: ws.s(4)),
           // 内容区
           Expanded(
             child: loading && items.isEmpty
@@ -163,17 +166,17 @@ class HotPodcastList extends StatelessWidget {
             GestureDetector(
               onTap: () => onSubscribe?.call(item.feedUrl!),
               child: Container(
-                width: ws.s(44),
-                height: ws.s(44),
+                width: ws.s(34),
+                height: ws.s(34),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C63FF).withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(ws.s(22)),
+                  color: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(ws.s(17)),
                   border: Border.all(
-                    color: const Color(0xFF6C63FF).withValues(alpha: 0.4),
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.25),
                   ),
                 ),
                 child: Icon(Icons.add,
-                    color: const Color(0xFF6C63FF), size: ws.s(24)),
+                    color: const Color(0xFF6C63FF), size: ws.s(18)),
               ),
             ),
         ],

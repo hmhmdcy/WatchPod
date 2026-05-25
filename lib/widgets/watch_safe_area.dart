@@ -13,15 +13,15 @@ class WatchSafeArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
-    final safePadding = ws.s(6.0); // base 6, scales with screen
+    final safePadding = ws.s(padding); // use passed padding
     return LayoutBuilder(builder: (context, constraints) {
       final radius =
           min(constraints.maxWidth, constraints.maxHeight) / 2 - safePadding;
       return ClipRRect(
         borderRadius: BorderRadius.circular(constraints.maxWidth / 2),
         child: Padding(
-          // 自适应 padding：大屏比例更小，小屏比例更大
-          padding: EdgeInsets.all(safePadding + (radius * 0.10)),
+          // 自适应 padding
+          padding: EdgeInsets.all(safePadding + (radius * 0.06)),
           child: child,
         ),
       );

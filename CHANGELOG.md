@@ -1,5 +1,21 @@
 # WatchPod Changelog
 
+## v1.8.5 — 2026-05-25
+
+### Added
+- **`TopActionBar` 统一顶部操作栏组件** (`lib/widgets/glass_components.dart`) — Stack+Positioned 悬浮设计方案，消除 AppBar 底部半透明背景条和阴影。统一 40dp 圆形按钮、ws.s(6) 间距、18sp 图标。接受 `List<TopAction>` 支持任意数量按钮和三态高亮。
+- **`TopAction` 按钮定义类** — `child`(图标/文字)、`onTap`(回调)、`brighter`(可选高亮)，配合 `TopActionBar` 使用。
+
+### Changed
+- **SettingsScreen: AppBar → TopActionBar + SafeArea** — 去掉 AppBar(←/🔄/➕ 三按钮) 改用 `TopActionBar`，前后按钮列表改用 Stack+Positioned 悬浮。同时 `WatchSafeArea` → `SafeArea` + `Padding(horizontal:8)`，消除圆形屏幕对列表两侧的裁剪，标题 left: ws.s(24) 避免圆形边界遮挡。
+- **EpisodesScreen: WatchSafeArea → SafeArea** — 最小改动，仅替换 import 和包裹组件。保持直接 Scaffold 结构，AppBar 保留（只有一个按钮）。
+- **hot_podcast_list.dart: 标题 left 间距增大** — `left: ws.s(4)` 确保圆形屏幕左上角不遮挡"🔥"和"苹"字。
+
+### Documentation
+- README.md: 更新调试流程，加入 SnapshotAction 和 xdotool 交互示例
+- AGENTS.md: 添加 TopActionBar 跨引用、SafeArea 迁移说明
+- CHANGELOG.md: 本次变更记录
+
 ## v1.8.4 — 2026-05-25
 
 ### Changed

@@ -18,13 +18,19 @@ flutter build apk --release --split-per-abi
 # 构建
 flutter build linux --debug
 
+# 查看当前 x11 窗口列表
+xwininfo -root -tree | grep watchpod
+
 # 启动（466×466 无标题栏圆形窗口）
 ./build/linux/x64/debug/bundle/watchpod &
 
+# 窗口 ID 查询（主窗口 10×10，子窗口 466×466）
+xdotool search --name watchpod
+
 # 截图（xwd 而非 scrot — WSLg 下 scrot 黑屏）
-xdotool search --name watchpod        # 找窗口 ID
-xwd -id <ID> -out /tmp/wp.xwd         # 抓窗口像素
-convert /tmp/wp.xwd /tmp/wp.png        # 转 PNG
+# 注意：用子窗口 ID（466×466 的，不是父窗口）
+xwd -id <子窗口ID> -out /tmp/wp.xwd
+convert /tmp/wp.xwd /tmp/wp.png
 
 # 模拟交互
 xdotool windowfocus <ID>
@@ -33,6 +39,9 @@ xdotool click 1
 
 # 视觉评估
 # vision_analyze(image_url='/tmp/wp.png')
+
+# 流程化评估: SnapshotAction (kill + screenshot)
+# 定义在 .hermes/skills/.../watchpod-ui/SKILL.md
 
 # 清理
 pkill -f 'watchpod.*linux'

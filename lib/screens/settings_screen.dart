@@ -8,7 +8,6 @@ import '../models/podcast_subscription.dart';
 import '../models/episode.dart';
 import '../widgets/glass_components.dart';
 import '../widgets/wear_scale.dart';
-import '../widgets/watch_safe_area.dart';
 import '../widgets/settings_add_bar.dart';
 import '../widgets/hot_podcast_list.dart';
 import '../widgets/settings_info_bar.dart';
@@ -249,130 +248,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F0F23).withValues(alpha: 0.85),
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 返回按钮
-            GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                height: ws.s(36),
-                width: ws.s(36),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_back,
-                    color: Colors.white70,
-                    size: ws.s(18),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: ws.s(6)),
-            // 刷新按钮
-            GestureDetector(
-              onTap: _loadingTop
-                  ? null
-                  : () async {
-                      await _topService.invalidateCache();
-                      _loadTopPodcasts();
-                    },
-              child: Container(
-                height: ws.s(36),
-                width: ws.s(36),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Center(
-                  child: _loadingTop
-                      ? SizedBox(
-                          width: ws.s(14),
-                          height: ws.s(14),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white54,
-                          ),
-                        )
-                      : Icon(
-                          Icons.refresh,
-                          color: Colors.white70,
-                          size: ws.s(18),
-                        ),
-                ),
-              ),
-            ),
-            SizedBox(width: ws.s(6)),
-            // 添加订阅按钮（+）
-            GestureDetector(
-              onTap: _adding ? null : _showAddFeedDialog,
-              child: Container(
-                height: ws.s(36),
-                width: ws.s(36),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    width: 0.5,
-                  ),
-                ),
-                child: Center(
-                  child: _adding
-                      ? SizedBox(
-                          width: ws.s(14),
-                          height: ws.s(14),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(Icons.add, color: Colors.white, size: ws.s(20)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
       body: PopScope(
         canPop: true,
         child: GlassBackground(
-          child: Column(
+          child: Stack(
             children: [
-              // ── 热门播客列表（剩余空间）──
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(top: ws.s(12)),
-                  child: WatchSafeArea(
-                    child: HotPodcastList(
-                      items: _topPodcasts,
-                      loading: _loadingTop,
-                      error: _topPodcastsError,
-                      subscribeError: _error,
-                      showTitle: true,
-                      onItemTap: (item) => _previewPodcast(item),
-                      onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
+              // ── 内容部分（去掉 WatchSafeArea，改用 SafeArea + 卡片自适应 padding） ──
+              SafeArea(
+                child: Column(
+                  children: [
+                    SizedBox(height: ws.s(60)),
+                    // 热门播客标题
+                    Padding(
+                      padding: EdgeInsets.only(left: ws.s(24), bottom: ws.s(4)),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('🔥 苹果热门播客',
+                            style: TextStyle(
+                                fontSize: ws.sp(13),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: ws.s(8)),
+                        child: HotPodcastList(
+                          items: _topPodcasts,
+                          loading: _loadingTop,
+                          error: _topPodcastsError,
+                          subscribeError: _error,
+                          showTitle: false,
+                          onItemTap: (item) => _previewPodcast(item),
+                          onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              // ── 顶部三个按钮（悬浮在内容上） ──
+              TopActionBar(
+                actions: [
+                  TopAction(
+                    child: Icon(Icons.arrow_back, color: Colors.white70, size: ws.s(18)),
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  TopAction(
+                    child: _loadingTop
+                        ? SizedBox(
+                            width: ws.s(14), height: ws.s(14),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white54,
+                            ),
+                          )
+                        : Icon(Icons.refresh, color: Colors.white70, size: ws.s(18)),
+                    onTap: _loadingTop
+                        ? null
+                        : () async {
+                            await _topService.invalidateCache();
+                            _loadTopPodcasts();
+                          },
+                  ),
+                  TopAction(
+                    child: _adding
+                        ? SizedBox(
+                            width: ws.s(14), height: ws.s(14),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white,
+                            ),
+                          )
+                        : Icon(Icons.add, color: Colors.white, size: ws.s(18)),
+                    onTap: _adding ? null : _showAddFeedDialog,
+                    brighter: true,
+                  ),
+                ],
               ),
             ],
           ),

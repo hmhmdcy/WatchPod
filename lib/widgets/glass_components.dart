@@ -184,3 +184,72 @@ class GlassImage extends StatelessWidget {
     );
   }
 }
+
+/// 统一顶部操作按钮栏 — 玻璃风格，Stack+Positioned 悬浮在内容之上
+///
+/// 所有操作按钮使用统一的 40dp 圆形样式，居中排列，间距 ws.s(6)。
+/// 替代 AppBar（解决 AppBar 底部深色残留问题）。
+/// 用法: 在 Stack 中放在内容层之上。
+class TopActionBar extends StatelessWidget {
+  final List<TopAction> actions;
+
+  const TopActionBar({super.key, required this.actions});
+
+  @override
+  Widget build(BuildContext context) {
+    final ws = WearScale.of(context);
+    return Positioned(
+      top: ws.s(12),
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (int i = 0; i < actions.length; i++) ...[
+              if (i > 0) SizedBox(width: ws.s(6)),
+              _buildButton(ws, actions[i]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton(WearScale ws, TopAction action) {
+    return GestureDetector(
+      onTap: action.onTap,
+      child: Container(
+        height: ws.s(40),
+        width: ws.s(40),
+        decoration: BoxDecoration(
+          color: action.brighter
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(ws.s(20)),
+          border: Border.all(
+            color: action.brighter
+                ? Colors.white.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
+        ),
+        child: Center(child: action.child),
+      ),
+    );
+  }
+}
+
+/// 顶部操作栏中的单个按钮定义
+class TopAction {
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool brighter;
+
+  const TopAction({
+    required this.child,
+    this.onTap,
+    this.brighter = false,
+  });
+}
