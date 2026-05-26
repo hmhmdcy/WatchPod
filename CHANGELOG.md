@@ -10,6 +10,10 @@
 - **SettingsScreen** (`lib/screens/settings_screen.dart`):
   - 移除 `Stack` + `Positioned` 标题浮层 → 标题由 `HotPodcastList` 内部管理 (`showTitle: true`)
   - 订阅错误通过 `subscribeError` 参数传递给 `HotPodcastList`
+- **WatchSafeArea 去除冗余裁剪** (`lib/widgets/watch_safe_area.dart`):
+  - 移除 `ClipRRect(borderRadius: circular)` — 全局 `MaterialApp.builder` 已对所有路由提供圆形裁剪
+  - 保留自适应 `Padding`（内容距圆形边缘间距）— 独立有用
+  - 文档注释更新：说明此组件不再负责裁剪
 
 ### Removed
 - **CircularScreenClipper** (`lib/widgets/circular_screen_clipper.dart`): 删除独立圆形裁剪组件

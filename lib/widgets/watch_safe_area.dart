@@ -2,8 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'wear_scale.dart';
 
-/// Clips content to a circular shape for round smartwatch screens.
 /// Adaptive padding via [WearScale]: smaller relative padding on large screens.
+/// NOTE: The circular screen clipping is now handled globally by MaterialApp.builder (ClipRRect).
+/// This widget only provides adaptive padding — it does NOT clip.
 class WatchSafeArea extends StatelessWidget {
   final Widget child;
   final double padding;
@@ -17,13 +18,9 @@ class WatchSafeArea extends StatelessWidget {
     return LayoutBuilder(builder: (context, constraints) {
       final radius =
           min(constraints.maxWidth, constraints.maxHeight) / 2 - safePadding;
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(constraints.maxWidth / 2),
-        child: Padding(
-          // 自适应 padding
-          padding: EdgeInsets.all(safePadding + (radius * 0.06)),
-          child: child,
-        ),
+      return Padding(
+        padding: EdgeInsets.all(safePadding + (radius * 0.06)),
+        child: child,
       );
     });
   }

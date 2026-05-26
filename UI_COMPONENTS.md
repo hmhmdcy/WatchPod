@@ -440,7 +440,9 @@ For accurate round-screen simulation, the `MediaQuery` override is **critical** 
   - 点击背景遮罩或订阅后自动关闭弹窗
 
 ### WatchSafeArea
-- Circular clip using `ClipPath` with circle equation.
+- Adaptive `Padding` based on circular geometry: `safePadding + radius * 0.06`
+- **Does NOT clip** — circular screen clip is handled globally by `MaterialApp.builder`.
+- Used in: HomeScreen (central podcast section), WatchLayout (scrollable content)
 - Only wraps center content zone — top bar goes outside it.
 
 ### TagPickerPage
