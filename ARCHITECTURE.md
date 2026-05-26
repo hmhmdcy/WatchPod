@@ -71,7 +71,7 @@ lib/
 ```
 / → HomeScreen
   → SettingsScreen (add + browse hot podcasts)  [TopActionBar ← 🔄 +]
-    → TagPickerPage (fullscreen tag selection)  [TopActionBar(compact: false) ✕ 选择标签]
+    → TagPickerPage (fullscreen tag selection)  [TopActionBar(compact: true) ✕ close]
     → showEpisodePreview (bottom sheet)
   → EpisodesScreen (tap podcast card)  [TopActionBar ← / ✕]
     → PlayerScreen (play episode)  [TopActionBar ←]
@@ -177,35 +177,28 @@ Scaffold(
 );
 ```
 
-### TagPickerPage — TopActionBar(compact: false) (v1.9.0)
+### TagPickerPage — TopActionBar(compact: true) ✕ (v1.9.0 → v1.9.1)
 
 **File:** `lib/screens/tag_picker_page.dart`
-**v1.9.0 从 AppBar 迁移到 TopActionBar(compact: false)。**
+**v1.9.0 从 AppBar 迁移到 TopActionBar。最终形态为 compact: true（纯图标 ✕）。**
 
 ```dart
-// Pattern: Stack + TopActionBar(compact: false) — 自适应宽度药丸
+// Pattern: Stack + TopActionBar(compact: true) — 纯图标圆形按钮
 Scaffold(
   backgroundColor: const Color(0xFF0F0F23),
   body: GlassBackground(
     child: Stack(
       children: [
-        // Content — SafeArea + top padding for button clearance
         SafeArea(
           child: Padding(
             padding: EdgeInsets.only(top: ws.s(48)),
             child: Column(children: [...]),
           ),
         ),
-        // TopActionBar — compact: false = 自适应宽度药丸
-        TopActionBar(
-          compact: false,
+        TopActionBar(  // compact: true (default) = 40×40 circle
           actions: [
             TopAction(
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.close, size: ws.s(20), color: Colors.white),
-                SizedBox(width: ws.s(6)),
-                Text('选择标签', ...),
-              ]),
+              child: Icon(Icons.close, size: ws.s(18), color: Colors.white),
               onTap: () => Navigator.pop(context),
             ),
           ],
@@ -216,11 +209,7 @@ Scaffold(
 );
 ```
 
-迁移要点:
-- `extendBodyBehindAppBar: true` 已移除
-- 按钮背景仍为 glass 风格 (白色微透明 + 0.5px 边框, borderRadius: ws.s(20))
-- `compact: false` 使按钮不强制 40×40 圆形, 改为自适应宽度 + padding 水平 12dp
-- Content 用 `Padding(top: ws.s(48))` 与浮动按钮栏错开
+布局详见 UI_COMPONENTS.md TagPickerPage 节。
 
 ### Per-Screen Button Spec
 
@@ -230,7 +219,7 @@ Scaffold(
 | SettingsScreen | Stack + TopActionBar | [←] [🔄] [+] — 3 glass circle buttons via TopActionBar | N/A |
 | EpisodesScreen | Stack + TopActionBar | [←] — single back button via TopActionBar | [✕ close] |
 | PlayerScreen | Stack + TopActionBar | [←] — single back button via TopActionBar | N/A |
-| TagPickerPage | Stack + TopActionBar(compact: false) | ✕ close + "选择标签"自适应药丸 | N/A |
+| TagPickerPage | Stack + TopActionBar(compact: true) | ✕ — pure icon circle button | N/A |
 
 ## Refresh Button Flow
 

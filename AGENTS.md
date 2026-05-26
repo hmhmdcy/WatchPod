@@ -18,7 +18,7 @@ WHEN task involves:
 - **version tracking** → read CHANGELOG.md, update it after changes
 - **environment config / install** → log to ~/.hermes/deployment-log/
 - **screen adapt / layout fix** → see WearScale in lib/widgets/wear_scale.dart
-- **TagTrack arc slider touch issues** → read docs/KNOWN_BUGS.md (已归档，详见 CHANGELOG.md v1.8.2 Fixed)
+- **TagTrack arc slider touch issues** → 已归档在 docs/CHANGELOG_ARCHIVE.md (v1.8.2 Fixed)
 - **TagPickerPage / 标签选择** → read `lib/screens/tag_picker_page.dart` + UI_COMPONENTS.md TagPickerPage section
 
 ## KEY CROSS-REFERENCES
@@ -65,3 +65,5 @@ WHEN task involves:
 23. **EpisodeTile 横向 margin (v1.9.2)**: 圆形屏幕下 `EpisodeTile` 的横向 margin 至少 `ws.s(16)`，推荐 `ws.s(20)`（≈33px）。ws.s(4) 会导致右侧播放按钮在圆形下半部分被裁切。播放按钮图标用 `ws.s(18)` 而非 `ws.s(20)` 以节省边缘空间。
 24. **EpisodesScreen 顶部/底部安全距 (v1.9.2)**: `SizedBox(height: ws.s(60))` 给 TopActionBar 留空间 + 列表顶部不进圆形收窄区；`ListView padding bottom: ws.s(64)` 确保滑到底时最后一项不被裁。底部 padding < ws.s(48) 时最后一项进入圆形下缘裁切区。
 25. **热重载替代重建 (v1.9.7)**: Linux Desktop 调试时，`flutter run` 保持运行，用 `process(action='write', session_id='<id>', data='r')` 发送 'r' 键触发热重载（无需回车），耗时 ~0.6s 而非重启的 ~30s。启动命令：`DISPLAY=:0 GDK_BACKEND=x11 NO_PROXY="*" HTTP_PROXY="" HTTPS_PROXY="" flutter run -d linux --debug`。使用 background=true + pty=true 模式。注意：使用 `write`（纯 'r'）而非 `submit`（'r\n'），flutter run 的 hot reload 只需按键不需回车。
+26. **RSS 刷新失败不再覆盖缓存 (v1.9.7)**: EpisodesScreen 在缓存有节目数据时，后台 RSS 网络刷新失败不会覆盖已有缓存。实现：分离 `_loadCachedEpisodes()` 和 `_refreshEpisodes()` 两个阶段，RSS 失败时保持 `_isLoading=false` 且 `_episodes` 保留缓存值。真机网络不稳定时用户仍可正常浏览已缓存节目——不会突然跳到错误页。
+27. **docs 已归档的文件**: `docs/KNOWN_BUGS.md` 已删除（全部内容过时）。`docs/CHANGELOG_ARCHIVE.md` 包含 v1.9.3 及更早的 changelog。Changelog 只保留最近 4 个版本（v1.9.4+）。UI_COMPONENTS.md 已剔重（架构代码移至 ARCHITECTURE.md）。ARCHITECTURE.md 中 TagPickerPage 引用已修正为 `compact: true`。

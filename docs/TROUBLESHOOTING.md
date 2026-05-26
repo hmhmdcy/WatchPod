@@ -138,3 +138,31 @@ Root cause: WatchSafeArea uses `ClipRRect(borderRadius: BorderRadius.circular(co
 Status: NOT a bug — this is expected behavior. On round watch screens the circular clip matches the bezel. On rectangular phone screens it becomes rounded corners, which the user accepted as a positive visual effect.
 Fix: Do NOT attempt to detect screen shape. The rounded corners are harmless and actually improve the phone test experience. The clip is correct on target hardware (round watch).
 ```
+
+## PATTERN: EpisodesScreen show "加载失败" even though cached episodes exist
+
+```
+Symptom: User opens episodes from HomeScreen → sees error/empty state. But cache file exists on disk.
+  On next app restart, cache loads fine. Problem only occurs mid-session after RSS refresh fails.
+
+Root cause: Old code path: `_loadEpisodes()` → try RSS → on error → `setState(() { _error = true })`
+  → UI enters error state, discarding cached episodes.
+  Since `_loadEpisodes` was called both for cache-load AND RSS-refresh in one function,
+  any RSS failure would overwrite even successfully-loaded cache.
+
+Fix (v1.9.7): Separate cache loading from RSS refresh:
+  1. `_loadCachedEpisodes()` — load from file, return episodes or null
+  2. If cache has data → `_episodes = cached` → `setState` → show immediately
+  3. Then call `_refreshEpisodes()` in background:
+     - Success → update `_episodes` + save to cache
+     - Failure → keep current `_episodes` (cache value), DO NOT show error
+  4. Only show error if RSS fails AND cache was empty
+
+Check:
+  cat lib/screens/episodes_screen.dart | grep -E "_loadCached|_refreshEpisodes|_loadEpisodes"
+  # Should see separation of concerns between cache and refresh
+
+Prevention: Never combine "load cache" and "refresh network" in the same function chain.
+  Cache-first means: load from cache → show UI immediately → then attempt network refresh
+  → network failure should NEVER affect the already-shown cache data.
+```
