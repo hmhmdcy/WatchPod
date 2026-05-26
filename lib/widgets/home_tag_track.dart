@@ -151,104 +151,81 @@ class _TagTrackState extends State<TagTrack> {
 
     _calcArcParameters(screenSize);
 
-    return SizedBox(
-      width: 40,
-      height: screenSize.height,
-      child: Stack(
-        clipBehavior: Clip.none,  // 允许浮层溢出到左侧
-        children: [
-          // 弧线绘制：用 OverflowBox 溢出到全屏
-          // IgnorePointer 防止全屏 OverflowBox 阻挡中央内容点击
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IgnorePointer(
+          child: CustomPaint(
+            size: screenSize,
+            painter: _TagTrackArcPainter(
+              startAngleRad: _startAngleRad,
+              endAngleRad: _endAngleRad,
+              arcTop: _arcTop,
+              arcBottom: _arcBottom,
+              arcRadius: _arcRadius,
+              arcCenterX: _circleCenter.dx,
+              arcCenterY: _circleCenter.dy,
+              strokeWidth: 10,
+              strokeColor: const Color(0xB0FFFFFF),
+              isDragging: _isDragging,
+              dragY: _isDragging ? _dragY : null,
+              showAddHint: _showAddHint,
+              ws: ws,
+            ),
+          ),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          child: SizedBox(
+            width: 40,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragStart: (details) {
+                setState(() => _isDragging = true);
+                _updateFromY(details.localPosition.dy, screenSize.height);
+              },
+              onVerticalDragUpdate: (details) {
+                _updateFromY(details.localPosition.dy, screenSize.height);
+              },
+              onVerticalDragEnd: (_) => _commitLabel(),
+              onTapUp: (details) {
+                _updateFromY(details.localPosition.dy, screenSize.height);
+                _commitLabel();
+              },
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+        if (_isDragging)
           Positioned.fill(
-            child: IgnorePointer(
-              child: OverflowBox(
-                minWidth: screenSize.width,
-                maxWidth: screenSize.width,
-                minHeight: screenSize.height,
-                maxHeight: screenSize.height,
-                alignment: Alignment.topLeft,
-                child: CustomPaint(
-                  size: screenSize,
-                  painter: _TagTrackArcPainter(
-                    startAngleRad: _startAngleRad,
-                    endAngleRad: _endAngleRad,
-                    arcTop: _arcTop,
-                    arcBottom: _arcBottom,
-                    arcRadius: _arcRadius,
-                    arcCenterX: _circleCenter.dx,
-                    arcCenterY: _circleCenter.dy,
-                    strokeWidth: 10,
-                    strokeColor: const Color(0xB0FFFFFF),
-                    isDragging: _isDragging,
-                    dragY: _isDragging ? _dragY : null,
-                    showAddHint: _showAddHint,
-                    ws: ws,
-                  ),
-                ),
+            child: OverflowBox(
+              minWidth: screenSize.width,
+              maxWidth: screenSize.width,
+              minHeight: screenSize.height,
+              maxHeight: screenSize.height,
+              alignment: Alignment.topLeft,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  if (_hoverLabel != null && !_showAddHint)
+                    Positioned(
+                      top: _dragY - ws.s(12),
+                      right: screenSize.width - _dragArcX + 29.0,
+                      child: _buildLabelBubble(_hoverLabel!, ws),
+                    ),
+                  if (_showAddHint)
+                    Positioned(
+                      top: _dragY - ws.s(30),
+                      right: screenSize.width - _dragArcX + 29.0,
+                      child: _buildAddBubble(ws),
+                    ),
+                ],
               ),
             ),
           ),
-          // 手势检测：限定在右侧 40dp 区域，不干扰中央内容点击
-          // ⚠️ 必须用 Positioned(right:0) + SizedBox(width:40) 而非 Positioned.fill
-          //    Positioned.fill 会覆盖 SizedBox(width:40) 导致手势区域全屏
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: SizedBox(
-              width: 40,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onVerticalDragStart: (details) {
-                  setState(() => _isDragging = true);
-                  _updateFromY(details.localPosition.dy, screenSize.height);
-                },
-                onVerticalDragUpdate: (details) {
-                  _updateFromY(details.localPosition.dy, screenSize.height);
-                },
-                onVerticalDragEnd: (_) => _commitLabel(),
-                onTapUp: (details) {
-                  _updateFromY(details.localPosition.dy, screenSize.height);
-                  _commitLabel();
-                },
-                child: const SizedBox.expand(),
-              ),
-            ),
-          ),
-          // 标签浮层 — 拖拽时渲染
-          // 浮层也放在 OverflowBox 中，使用全屏坐标系
-          // 气泡沿弧线运动，且气泡右边缘紧贴弧线左侧
-          if (_isDragging)
-            Positioned.fill(
-              child: OverflowBox(
-                minWidth: screenSize.width,
-                maxWidth: screenSize.width,
-                minHeight: screenSize.height,
-                maxHeight: screenSize.height,
-                alignment: Alignment.topLeft,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    if (_hoverLabel != null && !_showAddHint)
-                      Positioned(
-                        top: _dragY - ws.s(12),
-                        // 气泡右边缘 = 弧线点 X 向左偏移 29px (弧线半宽5 + 间隙24)
-                        // right 从全屏右边缘算起 = 屏幕宽度 - 气泡右边缘X
-                        right: screenSize.width - _dragArcX + 29.0,
-                        child: _buildLabelBubble(_hoverLabel!, ws),
-                      ),
-                    if (_showAddHint)
-                      Positioned(
-                        top: _dragY - ws.s(30),
-                        right: screenSize.width - _dragArcX + 29.0,
-                        child: _buildAddBubble(ws),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 
