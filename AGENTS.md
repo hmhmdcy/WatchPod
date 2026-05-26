@@ -33,8 +33,7 @@ WHEN task involves:
 - **PlayerScreen**: v1.8.5 重构为 **TopActionBar** + **SafeArea** 模式。单返回按钮。内容（封面+标题+进度条+控制按钮）在 SafeArea 内垂直居中，顶部 Spacer 留空。`ListenableBuilder` 响应 audioService 状态变化。
 - **TopPodcastService**: `lib/services/top_podcast_service.dart`. 24h memory+file cache. `getTopPodcasts()` → iTunes RSS. `resolveFeedUrls()` → iTunes lookup.
 - **HotPodcastList**: `lib/widgets/hot_podcast_list.dart`. Cover(42dp) + title(15sp) + subscribe(44dp). `showTitle: true` → 标题作为居中 ListView 头部随列表滚动。订阅错误通过 `subscribeError` 显示在列表上方。
-- **EpisodePreviewSheet**: `lib/widgets/episode_preview_sheet.dart`. 居中弹窗预览节目列表。`PageRouteBuilder(opaque: false)` + `CircularScreenClipper` 适配圆形屏幕。`EpisodePreviewSheet.show(context, item, episodes, onSubscribe)`。
-- **CircularScreenClipper**: `lib/widgets/circular_screen_clipper.dart`. 通用圆形裁剪 `CustomClipper<Path>`，用于 overlay 层。
+- **EpisodePreviewSheet**: `lib/widgets/episode_preview_sheet.dart`. 居中弹窗预览节目列表。`PageRouteBuilder(opaque: false)` + 全局 `MaterialApp.builder` 圆形裁剪。`EpisodePreviewSheet.show(context, item, episodes, onSubscribe)`。
 - **EpisodesScreen**: v1.8.5 重构为 **TopActionBar** + **Stack** 模式。无 AppBar。单按钮（多选模式→close/正常→arrow_back）用 TopActionBar 组件。无 SafeArea，无 WatchSafeArea。多选底部操作栏在 Column 内位于列表下方。
 - **StorageService**: Silently returns [] on parse failure. No migration support.
 - **TagPickerPage** (`lib/screens/tag_picker_page.dart`): v1.8.6 从 settings_screen.dart 提取为独立公开页面。全屏标签选择。**v1.9.0 迁移: AppBar → TopActionBar(compact: true)** 纯图标 ✕。**v1.9.1 布局优化**: `SafeArea → Center → SizedBox(192) → Stack` 结构，标签气泡加大到 ≈92dp（`(maxWidth - ws.s(3)*3)/2`），列间距 `spacing:8` 行间距 `runSpacing:5`，确认按钮半透明毛玻璃 `BackdropFilter blur 6` + alpha 0.35。`ScrollView padding bottom: 80` 确保最后一行在按钮上方。标签数据源：`PodcastSubscription.presetTags`（10个预设标签）。

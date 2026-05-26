@@ -3,7 +3,6 @@ import 'dart:math';
 import '../models/episode.dart';
 import '../services/top_podcast_service.dart';
 import 'wear_scale.dart';
-import 'circular_screen_clipper.dart';
 
 /// 热门播客节目预览弹窗
 /// 居中弹窗，标题为播客名称，节目列表可滚动到底部完全可见。
@@ -80,9 +79,7 @@ class EpisodePreviewSheet extends StatelessWidget {
     // 使用 Material 确保 opaque: false 的 route 也有完整文字样式链
     return Material(
       color: Colors.transparent,
-      child: ClipPath(
-        clipper: const CircularScreenClipper(),
-        child: Stack(
+      child: Stack(
           children: [
             // 半透明背景遮罩 — 点击关闭
             Positioned.fill(
@@ -155,8 +152,7 @@ class EpisodePreviewSheet extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

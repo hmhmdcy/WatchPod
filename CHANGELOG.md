@@ -11,6 +11,11 @@
   - 移除 `Stack` + `Positioned` 标题浮层 → 标题由 `HotPodcastList` 内部管理 (`showTitle: true`)
   - 订阅错误通过 `subscribeError` 参数传递给 `HotPodcastList`
 
+### Removed
+- **CircularScreenClipper** (`lib/widgets/circular_screen_clipper.dart`): 删除独立圆形裁剪组件
+  - 原为 `EpisodePreviewSheet` 的圆形裁剪而设计，现由 `MaterialApp.builder` 全局 `ClipRRect` 统一覆盖
+  - `EpisodePreviewSheet` 中的 `ClipPath(clipper: CircularScreenClipper())` 已移除
+
 ## v1.9.5 — 2026-05-26
 
 ### Added

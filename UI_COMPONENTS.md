@@ -432,18 +432,12 @@ For accurate round-screen simulation, the `MediaQuery` override is **critical** 
   - `onSubscribe` — 订阅回调 `(String feedUrl) => void`
 - **实现细节:**
   - 使用 `PageRouteBuilder(opaque: false)` 保持底层页面可见
-  - 配合 `CircularScreenClipper` 将弹窗裁剪到圆形可见区域
+  - 圆形裁剪由全局 `MaterialApp.builder` 的 `ClipRRect` 统一提供，无需额外 clipper
   - 动画：`FadeTransition` + `ScaleTransition(easeOutBack)` — 弹性缩放弹入
   - 标题栏+订阅按钮固定在顶部，节目列表内部可滚动
   - 收起订阅按钮：半透明毛玻璃样式 (`alpha: 0.18` + 描边)
   - 动态高度计算：基于圆形方程 `y = centerY + sqrt(r² - (w/2)²)` 确保底部不被截断
   - 点击背景遮罩或订阅后自动关闭弹窗
-
-### CircularScreenClipper
-**File:** `lib/widgets/circular_screen_clipper.dart`
-- 通用圆形裁剪 `CustomClipper<Path>`，用于将任意 Widget 裁剪到屏幕圆形可见区域
-- 以 `min(width, height) / 2` 为半径，屏幕中心为圆心
-- 常用于 `ClipPath` + `PageRouteBuilder(opaque: false)` 组合，确保 overlay 内容不超出圆形边界
 
 ### WatchSafeArea
 - Circular clip using `ClipPath` with circle equation.
