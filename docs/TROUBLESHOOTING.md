@@ -119,15 +119,16 @@ Check:
 Prevention: After any patch() to constructor or Dio code, always run `flutter analyze` on that file.
 ```
 
-## PATTERN: AppBar auto-inserts back arrow at top-left on round screens
+## PATTERN: AppBar auto-inserts back arrow at top-left [HISTORICAL]
 
 ```
-Symptom: Even after setting `leading: null` and `centerTitle: true`, a back arrow appears at the top-left of the screen. Visible on phone installs; on round watches the arrow sits outside the visible area but wastes the AppBar.
-Root cause: Flutter's AppBar defaults to `automaticallyImplyLeading: true`. When a page is pushed via Navigator, Material auto-inserts a back button in the leading slot regardless of `leading: null`.
-Fix: Add `automaticallyImplyLeading: false` to every AppBar that uses `centerTitle: true` with custom buttons in the title slot.
-Check:
-  grep -r "AppBar" lib/screens/ lib/widgets/  # verify all AppBars have the flag
-Prevention: Always add `automaticallyImplyLeading: false` when first creating an AppBar that doesn't use default leading.
+Status: This was an issue in v1.6.0–v1.8.5 when screens used AppBar with `centerTitle: true`.
+As of v1.9.1, all active screens use TopActionBar instead of AppBar — the issue no longer applies.
+
+Historical reference:
+Symptom: Even after setting `leading: null` and `centerTitle: true`, a back arrow appeared at the top-left.
+Root cause: Flutter's AppBar defaults to `automaticallyImplyLeading: true`.
+Fix (archived): `automaticallyImplyLeading: false` on each AppBar.
 ```
 
 ## PATTERN: WatchSafeArea causes rounded corners on rectangular phone screens

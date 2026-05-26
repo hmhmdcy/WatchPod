@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 /// 根据屏幕短边（圆形屏 = 直径）动态调整字号、间距、控件大小。
 /// 所有写死的 12px, 14px 等处应该用 [WearScale] 替代。
 ///
-/// 设计基准：360dp（标准 Wear OS 模拟器）
+/// 设计基准：280dp（华为 Watch 3 233dp 逻辑屏幕缩小到 83%）
 ///
 /// 用法：
-///   WearScale.of(context).s(12)   → 在 360dp 上 = 12, 在 466dp 上 = ~15.5
-///   WearScale.of(context).sp(12)  → 同上但带字体缩放（推荐给字号）
+///   WearScale.of(context).s(12)   → 在 280dp 设计基准上 = 12，实际屏幕等比缩放
+///   WearScale.of(context).sp(12)  → 同上带字体缩放（推荐给字号）
 ///   WearScale.of(context).fs(12)  → 同上但确保不超过原始值（防止大屏上过大）
 class WearScale {
   final double screenShortSide;
