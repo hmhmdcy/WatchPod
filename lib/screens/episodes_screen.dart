@@ -49,7 +49,7 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
 
   Future<void> _loadEpisodes() async {
     if (kIsWeb || Platform.isLinux) {
-      // Web 调试：注入模拟剧集数据
+      // Linux / Web 调试：注入模拟剧集数据
       _episodes = List.generate(8, (i) => Episode(
         id: 'mock-ep-$i',
         podcastId: widget.podcast.id,
@@ -65,8 +65,9 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
       setState(() => _loading = false);
       return;
     }
+
+    // 第一步：从缓存加载节目（优先展示）
     try {
-      setState(() => _loading = true);
       final cached = await widget.storageService.loadEpisodes(widget.podcast.id);
       if (cached.isNotEmpty) {
         _episodes = cached;
@@ -76,9 +77,16 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
             ?.imageUrl;
         setState(() => _loading = false);
       }
+    } catch (_) {
+      // 缓存加载失败不阻塞，继续尝试 RSS
+    }
+
+    // 第二步：后台 RSS 刷新（失败不覆盖缓存数据）
+    try {
       final result = await widget.rssService.parseFeed(widget.podcast.feedUrl);
       await widget.storageService.saveEpisodes(widget.podcast.id, result.episodes);
 
+      if (!mounted) return;
       setState(() {
         _episodes = result.episodes;
         _latestImageUrl = _episodes
@@ -88,10 +96,16 @@ class _EpisodesScreenState extends State<EpisodesScreen> {
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      // RSS 刷新失败：如果有缓存则不报错，没有缓存时才显示错误
+      if (_episodes.isEmpty && mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      } else {
+        // 已有缓存数据，RSS 静默失败不干扰用户
+        if (mounted) setState(() => _loading = false);
+      }
     }
   }
 
