@@ -6,14 +6,14 @@ import '../widgets/podcast_tile.dart';
 import '../widgets/glass_components.dart';
 import '../widgets/watch_safe_area.dart';
 import '../widgets/wear_scale.dart';
-import '../widgets/home_tag_track.dart';
 import 'episodes_screen.dart';
+import 'player_screen.dart';
 import 'settings_screen.dart';
 import '../services/audio_service.dart';
 import '../services/storage_service.dart';
 import '../services/rss_service.dart';
 
-/// WatchPod 首页 — Stack 布局 + 右侧弧线标签导航条
+/// WatchPod 首页 — Stack 布局 + 左侧分页点列 + 右侧标签列
 class HomeScreen extends StatefulWidget {
   final AudioService audioService;
   final StorageService storageService;
@@ -36,6 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
 
   String? _activeTag;
+  bool _isTagDragging = false;
+  int _tagDragIndex = 0;
 
   @override
   void initState() {
@@ -91,6 +93,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return tags.toList()..sort();
   }
 
+  List<String> get _allTagItems => ['全部', ..._allTags];
+
   List<PodcastSubscription> get _filteredSubscriptions {
     if (_activeTag == null) return _subscriptions;
     return _subscriptions.where((s) => s.tags.contains(_activeTag)).toList();
@@ -120,6 +124,46 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _openPlayer() {
+    if (widget.audioService.currentEpisode != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PlayerScreen(audioService: widget.audioService),
+        ),
+      );
+    }
+  }
+
+  PodcastSubscription get _currentPodcast {
+    final filtered = _filteredSubscriptions;
+    if (_currentPage >= 0 && _currentPage < filtered.length) {
+      return filtered[_currentPage];
+    }
+    return _subscriptions.isNotEmpty ? _subscriptions.first : _subscriptions[0];
+  }
+
+  List<String> get _currentPodcastTags => _currentPodcast.tags;
+
+  void _updateTagDragFromY(double y) {
+    final height = MediaQuery.of(context).size.height;
+    final ratio = (y / height).clamp(0.0, 1.0);
+    final index = (ratio * (_allTagItems.length - 1)).round().clamp(0, _allTagItems.length - 1);
+    if (index != _tagDragIndex) {
+      setState(() => _tagDragIndex = index);
+    }
+  }
+
+  void _commitTagDrag() {
+    if (!_isTagDragging) return;
+    final label = _allTagItems[_tagDragIndex];
+    setState(() {
+      _activeTag = label == '全部' ? null : label;
+      _currentPage = 0;
+      _isTagDragging = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
@@ -129,65 +173,64 @@ class _HomeScreenState extends State<HomeScreen> {
       body: GlassBackground(
         child: Stack(
           children: [
-            // 内容区域（SafeArea 保护不被圆边裁切）
+            // 内容区域
             SafeArea(
               child: _loading
                   ? const Center(child: CircularProgressIndicator(color: Colors.white))
                   : _subscriptions.isEmpty
-                      ? Stack(
-                          children: [
-                            Center(
-                              child: Padding(
-                                padding: EdgeInsets.only(bottom: ws.s(42)),
-                                child: _buildEmptyState(ws),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: ws.s(16),
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                child: GestureDetector(
-                                  onTap: _openSettings,
-                                  child: Container(
-                                    height: ws.s(42),
-                                    padding: EdgeInsets.symmetric(horizontal: ws.s(24)),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(ws.s(21)),
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.15),
-                                        width: 0.5,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.add, color: Colors.white, size: ws.s(18)),
-                                        SizedBox(width: ws.s(4)),
-                                        Text('添加',
-                                            style: TextStyle(
-                                                fontSize: ws.sp(14),
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
+                      ? _buildEmptyState(ws)
                       : SizedBox.expand(
                           child: WatchSafeArea(
-                            child: _buildPodcastSection(ws),
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                left: ws.s(14),
+                                right: ws.s(42),
+                              ),
+                              child: _buildPodcastSection(ws),
+                            ),
                           ),
                         ),
             ),
-            // 右侧弧线滑条（在 SafeArea 外部，触摸区域直达屏幕边缘）
+            // 左侧垂直页面指示小点
             if (!_loading && _subscriptions.isNotEmpty)
-              Positioned.fill(
-                child: _buildTopBar(ws),
+              Positioned(
+                left: ws.s(3),
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _buildPageIndicator(ws),
+                ),
+              ),
+            // 右侧标签列（常驻显示当前播客标签 / 拖拽切换筛选）
+            if (!_loading && _subscriptions.isNotEmpty)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: SizedBox(
+                  width: 40,
+                  child: _buildTagColumn(ws),
+                ),
+              ),
+            // 顶部「正在播放」按钮
+            if (!_loading && widget.audioService.currentEpisode != null)
+              Positioned(
+                top: ws.s(6),
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _buildNowPlayingButton(ws),
+                ),
+              ),
+            // 底部「添加订阅」按钮
+            if (!_loading)
+              Positioned(
+                bottom: ws.s(10),
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _buildAddButton(ws),
+                ),
               ),
           ],
         ),
@@ -195,17 +238,164 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 右侧贴合弧边的毛玻璃滑条（标签切换 + 添加订阅）
-  Widget _buildTopBar(WearScale ws) {
-    final tags = _allTags;
+  /// 左侧垂直页面指示点列
+  Widget _buildPageIndicator(WearScale ws) {
+    final count = _filteredSubscriptions.length;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        return Container(
+          width: ws.s(5),
+          height: ws.s(5),
+          margin: EdgeInsets.symmetric(vertical: ws.s(3)),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: i == _currentPage
+                ? const Color(0xFF6C63FF)
+                : Colors.grey[600],
+          ),
+        );
+      }),
+    );
+  }
 
-    return TagTrack(
-      tags: tags,
-      activeTag: _activeTag,
-      onTagChanged: (tag) {
-        setState(() => _activeTag = tag);
+  /// 右侧标签列 — 双模式
+  ///   静态：显示当前播客的标签属性
+  ///   拖拽：切换为标签筛选模式
+  Widget _buildTagColumn(WearScale ws) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onVerticalDragStart: (details) {
+        setState(() => _isTagDragging = true);
+        _updateTagDragFromY(details.localPosition.dy);
       },
-      onAddSubscription: _openSettings,
+      onVerticalDragUpdate: (details) {
+        _updateTagDragFromY(details.localPosition.dy);
+      },
+      onVerticalDragEnd: (_) => _commitTagDrag(),
+      child: Container(
+        alignment: Alignment.center,
+        child: _isTagDragging ? _buildDraggingTags(ws) : _buildStaticTags(ws),
+      ),
+    );
+  }
+
+  /// 静态模式：当前播客的标签
+  Widget _buildStaticTags(WearScale ws) {
+    final tags = _currentPodcastTags;
+    if (tags.isEmpty) {
+      return Text('⋯',
+          style: TextStyle(color: Colors.grey[500], fontSize: ws.sp(9)));
+    }
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: tags.map((tag) => Padding(
+        padding: EdgeInsets.symmetric(vertical: ws.s(2)),
+        child: Text(
+          tag,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: ws.sp(10),
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      )).toList(),
+    );
+  }
+
+  /// 拖拽模式：所有可用标签，高亮当前选中
+  Widget _buildDraggingTags(WearScale ws) {
+    final items = _allTagItems;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(items.length, (i) {
+        final isSelected = i == _tagDragIndex;
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: ws.s(2)),
+          child: Text(
+            items[i],
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.3),
+              fontSize: ws.sp(isSelected ? 11 : 9),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        );
+      }),
+    );
+  }
+
+  /// 顶部「正在播放」按钮（紫色药丸样式）
+  Widget _buildNowPlayingButton(WearScale ws) {
+    return GestureDetector(
+      onTap: _openPlayer,
+      child: Container(
+        height: ws.s(28),
+        padding: EdgeInsets.symmetric(horizontal: ws.s(10)),
+        decoration: BoxDecoration(
+          color: const Color(0xFF6C63FF).withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(ws.s(14)),
+          border: Border.all(
+            color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: ws.s(6),
+              height: ws.s(6),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF6C63FF),
+              ),
+            ),
+            SizedBox(width: ws.s(3)),
+            Icon(Icons.play_arrow, color: Colors.white, size: ws.s(14)),
+            SizedBox(width: ws.s(3)),
+            Text('正在播放',
+                style: TextStyle(
+                    fontSize: ws.sp(10),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 底部「添加订阅」按钮
+  Widget _buildAddButton(WearScale ws) {
+    return GestureDetector(
+      onTap: _openSettings,
+      child: Container(
+        height: ws.s(32),
+        padding: EdgeInsets.symmetric(horizontal: ws.s(16)),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(ws.s(16)),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add, color: Colors.white, size: ws.s(14)),
+            SizedBox(width: ws.s(3)),
+            Text('添加订阅',
+                style: TextStyle(
+                    fontSize: ws.sp(11),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -253,23 +443,6 @@ class _HomeScreenState extends State<HomeScreen> {
               tags: sub.tags,
               coverSize: ws.capped(96, maxScale: 1.2),
               onTap: () => _openEpisodes(sub),
-            ),
-            SizedBox(height: ws.s(8)),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(count, (i) {
-                return Container(
-                  width: ws.s(6),
-                  height: ws.s(6),
-                  margin: EdgeInsets.symmetric(horizontal: ws.s(3)),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: i == _currentPage
-                        ? const Color(0xFF6C63FF)
-                        : Colors.grey[600],
-                  ),
-                );
-              }),
             ),
           ],
         );
