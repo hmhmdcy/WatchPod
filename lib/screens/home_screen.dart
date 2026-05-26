@@ -186,7 +186,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             // 右侧弧线滑条（在 SafeArea 外部，触摸区域直达屏幕边缘）
             if (!_loading && _subscriptions.isNotEmpty)
-              Positioned.fill(
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
                 child: _buildTopBar(ws),
               ),
           ],

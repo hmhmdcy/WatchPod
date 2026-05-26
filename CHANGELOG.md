@@ -4,6 +4,7 @@
 
 ### Fixed
 - **EpisodesScreen 在真机上不显示节目**：缓存节目数据存在时，RSS 网络刷新失败会覆盖缓存并显示错误页。修复：分离缓存加载和 RSS 刷新，RSS 失败不再覆盖已有缓存数据。真机网络不稳定时仍能正常查看已缓存的节目列表。
+- **首页点击播客卡片无法进入节目播放列表**：`HomeScreen` 中 `Positioned.fill()` 强制约束 TagTrack 全屏，覆盖内部的 `SizedBox(width: 40)`，导致 TagTrack 的 `GestureDetector`（全屏透明区域）吞掉所有点击事件。修复：改用 `Positioned(right: 0, top: 0, bottom: 0)` 让 TagTrack 仅占据右边缘 40dp，中央 PodcastTile 的 `onTap` 恢复正常。（`home_screen.dart` / `podcast_tile.dart`）
 
 ## v1.9.6 — 2026-05-26
 
