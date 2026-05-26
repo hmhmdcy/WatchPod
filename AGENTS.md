@@ -6,7 +6,7 @@
 |> PACKAGE: com.watchpod.watchpod
 |> TARGET: Release APK for ARMv7 (Huawei Watch 3), ARM64. Debug for x86_64 (emulator)
 |> WEARSCALE BASE: 280 dp (not standard 360 dp). See ARCHITECTURE.md for rationale.
-||> LINUX DEBUG: Use `flutter run -d linux --debug` NOT direct binary. Direct binary (`./build/linux/x64/debug/bundle/watchpod`) may start without creating a visible X11 window in WSLg. Build first, then kill old flutter run, launch via `flutter run -d linux --debug` (wait 10-12s for window). Load `wslg-x11-screenshot` skill for full debug workflow (截图 xwd/import, 录屏 ffmpeg, 模拟交互 xdotool, 清理). Cleanup: pkill -f 'watchpod.*linux'. After screenshot, ALWAYS send to user via Feishu: send_message(target:"feishu", message:"MEDIA:<path>\\n说明"). Debugging frontend layout: ignore "加载失败" errors — those are screenshot timing issues or missing mock data. If `curl` to the API succeeds, the backend is fine. Focus on layout/UI correctness only.
+||| LINUX DEBUG: Use `DISPLAY=:0 GDK_BACKEND=x11 NO_PROXY="*" HTTP_PROXY="" HTTPS_PROXY="" flutter run -d linux --debug` with background=true + pty=true. Launch ONCE per session (wait 10-12s for window). After that, use **hot reload** (`process(action='write', session_id='<id>', data='r')`) for all code changes — ~0.6s per iteration, NOT ~30s restart. Do NOT kill/re-launch flutter run between iterations. **Use `write` (raw 'r') NOT `submit` ('r'+Enter).** Only clean up at session end. Load `wslg-x11-screenshot` skill for full debug workflow (screenshots, xdotool limitations: clicks intercepted by translucent overlays in Stack, not reliably testable on Linux).
 
 ## TRIGGER CONDITIONS
 
@@ -64,3 +64,4 @@ WHEN task involves:
 22. **_LinuxDebugPages initialPage 参数 (v1.9.0)**: 调试页面构造函数新增 `initialPage` 参数（默认 0 = HomeScreen），替代硬编码 `_currentPage = N`。切换调试页面只需在 `_LinuxDebugPages(initialPage: N)` 传索引，无需改源码值再改回来。索引: 0=Home, 1=Episodes, 2=Player, 3=Settings, 4=TagPicker。
 23. **EpisodeTile 横向 margin (v1.9.2)**: 圆形屏幕下 `EpisodeTile` 的横向 margin 至少 `ws.s(16)`，推荐 `ws.s(20)`（≈33px）。ws.s(4) 会导致右侧播放按钮在圆形下半部分被裁切。播放按钮图标用 `ws.s(18)` 而非 `ws.s(20)` 以节省边缘空间。
 24. **EpisodesScreen 顶部/底部安全距 (v1.9.2)**: `SizedBox(height: ws.s(60))` 给 TopActionBar 留空间 + 列表顶部不进圆形收窄区；`ListView padding bottom: ws.s(64)` 确保滑到底时最后一项不被裁。底部 padding < ws.s(48) 时最后一项进入圆形下缘裁切区。
+25. **热重载替代重建 (v1.9.7)**: Linux Desktop 调试时，`flutter run` 保持运行，用 `process(action='write', session_id='<id>', data='r')` 发送 'r' 键触发热重载（无需回车），耗时 ~0.6s 而非重启的 ~30s。启动命令：`DISPLAY=:0 GDK_BACKEND=x11 NO_PROXY="*" HTTP_PROXY="" HTTPS_PROXY="" flutter run -d linux --debug`。使用 background=true + pty=true 模式。注意：使用 `write`（纯 'r'）而非 `submit`（'r\n'），flutter run 的 hot reload 只需按键不需回车。
