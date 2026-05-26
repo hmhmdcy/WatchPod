@@ -31,41 +31,43 @@ class HotPodcastList extends StatelessWidget {
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: ws.s(8)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 错误提示
-          if (subscribeError != null)
-            Padding(
-              padding: EdgeInsets.only(bottom: ws.s(4)),
+    return Column(
+      children: [
+        // 错误提示（渐变透明 + 居中）— 浮在列表上方，不参与滚动
+        if (subscribeError != null)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: ws.s(8))
+                .copyWith(bottom: ws.s(4)),
+            child: Center(
               child: Container(
                 padding: EdgeInsets.symmetric(
-                    horizontal: ws.s(10), vertical: ws.s(4)),
+                    horizontal: ws.s(12), vertical: ws.s(3)),
                 decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.red.withValues(alpha: 0.08),
+                      Colors.red.withValues(alpha: 0.02),
+                      Colors.red.withValues(alpha: 0.08),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(ws.s(8)),
+                  border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.15),
+                    width: 0.5,
+                  ),
                 ),
                 child: Text(subscribeError!,
                     style: TextStyle(
-                        fontSize: ws.sp(10), color: Colors.red)),
+                        fontSize: ws.sp(9), color: Colors.red.withValues(alpha: 0.9))),
               ),
             ),
-          SizedBox(height: ws.s(4)),
-          // 标题
-          if (showTitle)
-            Padding(
-              padding: EdgeInsets.only(left: ws.s(4), top: ws.s(2)),
-              child: Text('🔥 苹果热门播客',
-                  style: TextStyle(
-                      fontSize: ws.sp(13),
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold)),
-            ),
-          SizedBox(height: ws.s(4)),
-          // 内容区
-          Expanded(
+          ),
+        // 内容区：loading/error 占满，或列表（标题+卡片一起滚动）
+        Expanded(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: ws.s(8)),
             child: loading && items.isEmpty
                 ? Center(
                     child: CircularProgressIndicator(
@@ -75,16 +77,31 @@ class HotPodcastList extends StatelessWidget {
                         child: Text(error!,
                             style: TextStyle(
                                 fontSize: ws.sp(10), color: Colors.orange)))
-                    : ListView.builder(
-                        itemCount: items.length,
-                        itemBuilder: (ctx, i) {
-                          final item = items[i];
-                          return _buildItem(context, ws, item);
-                        },
+                    : ListView(
+                        children: [
+                          // 标题 — 作为列表头部，随列表滚动
+                          if (showTitle)
+                            Padding(
+                              padding:
+                                  EdgeInsets.only(top: ws.s(4), bottom: ws.s(8)),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: Text('🔥 苹果热门播客',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: ws.sp(13),
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          // 列表卡片
+                          ...items.map((item) =>
+                              _buildItem(context, ws, item)),
+                        ],
                       ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

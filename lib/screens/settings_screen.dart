@@ -82,7 +82,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         setState(() {
           _loadingTop = false;
-          _topPodcastsError = '加载失败: $e';
+          _topPodcastsError = '加载失败: 无法连接服务器';
+        });
+        // 3秒后自动清除错误
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _topPodcastsError = null);
         });
       }
     }
@@ -200,7 +204,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       }
     } catch (e) {
-      setState(() => _error = '订阅失败: $e');
+      setState(() => _error = '订阅失败: 无法连接服务器');
+      // 3秒后自动清除错误
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _error = null);
+      });
     } finally {
       setState(() => _adding = false);
     }
@@ -298,18 +306,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           SizedBox(height: ws.s(60)),
-          // 热门播客标题
-          Padding(
-            padding: EdgeInsets.only(left: ws.s(24), bottom: ws.s(4)),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('🔥 苹果热门播客',
-                  style: TextStyle(
-                      fontSize: ws.sp(13),
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold)),
-            ),
-          ),
           Expanded(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: ws.s(8)),
@@ -318,7 +314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 loading: _loadingTop,
                 error: _topPodcastsError,
                 subscribeError: _error,
-                showTitle: false,
+                showTitle: true,
                 onItemTap: (item) => _previewPodcast(item),
                 onSubscribe: (feedUrl) => _subscribeToFeed(feedUrl),
               ),

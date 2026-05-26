@@ -1,5 +1,16 @@
 # WatchPod Changelog
 
+## v1.9.6 — 2026-05-26
+
+### Changed
+- **HotPodcastList 标题行为重构** (`lib/widgets/hot_podcast_list.dart`):
+  - 标题从 Column 固定位置移入 ListView 作为首个列表元素 → **随列表一起滚动**
+  - 标题居中：`SizedBox(width: double.infinity)` + `Text(textAlign: TextAlign.center)`
+  - 订阅错误提示 (`subscribeError`) 保持在列表上方临时显示，不参与滚动
+- **SettingsScreen** (`lib/screens/settings_screen.dart`):
+  - 移除 `Stack` + `Positioned` 标题浮层 → 标题由 `HotPodcastList` 内部管理 (`showTitle: true`)
+  - 订阅错误通过 `subscribeError` 参数传递给 `HotPodcastList`
+
 ## v1.9.5 — 2026-05-26
 
 ### Added

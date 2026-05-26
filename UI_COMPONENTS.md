@@ -191,14 +191,9 @@ Scaffold(
             padding: EdgeInsets.only(top: ws.s(48)), // room for TopActionBar
             child: Column(
               children: [
-                // Title row
-                Padding(
-                  padding: EdgeInsets.only(left: ws.s(24), bottom: ws.s(4)),
-                  child: Text('🔥 苹果热门播客', left:...),
-                ),
                 Expanded(
                   child: HotPodcastList(
-                    showTitle: false,
+                    showTitle: true,  // 标题在 ListView 内部，居中，随列表滚动
                     onItemTap: ...,
                     onSubscribe: ...,
                   ),
@@ -423,6 +418,8 @@ For accurate round-screen simulation, the `MediaQuery` override is **critical** 
 
 ### HotPodcastList
 - Props: items, loading, error, subscribeError, showTitle, onItemTap, onSubscribe
+- `showTitle: true` → 标题作为 ListView 首个元素，居中显示（`SizedBox(width: double.infinity)` + `textAlign: TextAlign.center`），**随列表滚动**
+- `subscribeError` → 红色渐变提示条，显示在列表上方（不参与滚动，瞬态提示）
 - Each item: cover(42dp, borderRadius 8dp), title(15sp), author(11sp), subscribe btn(44dp circle)
 
 ### WatchSafeArea
