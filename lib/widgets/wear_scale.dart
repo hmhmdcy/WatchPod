@@ -40,11 +40,11 @@ class WearScale {
   double fs(double value) => value * ratio;
 
   /// 按比例缩放尺寸（适用于 padding, margin, iconSize, coverSize）
-  /// 在 360dp = 原始值，466dp ≈ 1.29x
+  /// 在 280dp 设计基准 = 原始值，真机 233dp ≈ 0.83x
   double s(double value) => value * ratio;
 
   /// 带字体缩放（适用于 fontSize）
-  /// 在 360dp = 原始值，466dp ≈ 1.29x
+  /// 在 280dp 设计基准 = 原始值，真机 233dp ≈ 0.83x
   double sp(double value) => value * ratio;
 
   /// 带上限的缩放（适用于不能太大的值，如 icon、封面）
