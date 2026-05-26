@@ -183,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: WatchSafeArea(
                             child: Padding(
                               padding: EdgeInsets.only(
-                                left: ws.s(14),
+                                left: ws.s(42),
                                 right: ws.s(42),
                               ),
                               child: _buildPodcastSection(ws),
@@ -194,17 +194,15 @@ class _HomeScreenState extends State<HomeScreen> {
             // 左侧垂直页面指示小点
             if (!_loading && _subscriptions.isNotEmpty)
               Positioned(
-                left: ws.s(3),
+                left: 70,
                 top: 0,
                 bottom: 0,
-                child: Center(
-                  child: _buildPageIndicator(ws),
-                ),
+                child: _buildPageIndicator(ws),
               ),
             // 右侧标签列（常驻显示当前播客标签 / 拖拽切换筛选）
             if (!_loading && _subscriptions.isNotEmpty)
               Positioned(
-                right: 0,
+                right: 52,
                 top: 0,
                 bottom: 0,
                 child: SizedBox(
