@@ -422,6 +422,29 @@ For accurate round-screen simulation, the `MediaQuery` override is **critical** 
 - `subscribeError` → 红色渐变提示条，显示在列表上方（不参与滚动，瞬态提示）
 - Each item: cover(42dp, borderRadius 8dp), title(15sp), author(11sp), subscribe btn(44dp circle)
 
+### EpisodePreviewSheet
+**File:** `lib/widgets/episode_preview_sheet.dart`
+- 居中弹窗，预览播客节目列表，代替 `showModalBottomSheet` 以适配圆形屏幕
+- **入口:** `EpisodePreviewSheet.show(context, item, episodes, onSubscribe)`
+- **Props:**
+  - `item` — `TopPodcastItem`（播客名称作为弹窗标题）
+  - `episodes` — `List<Episode>`（节目列表，缩略图格式 ▸）
+  - `onSubscribe` — 订阅回调 `(String feedUrl) => void`
+- **实现细节:**
+  - 使用 `PageRouteBuilder(opaque: false)` 保持底层页面可见
+  - 配合 `CircularScreenClipper` 将弹窗裁剪到圆形可见区域
+  - 动画：`FadeTransition` + `ScaleTransition(easeOutBack)` — 弹性缩放弹入
+  - 标题栏+订阅按钮固定在顶部，节目列表内部可滚动
+  - 收起订阅按钮：半透明毛玻璃样式 (`alpha: 0.18` + 描边)
+  - 动态高度计算：基于圆形方程 `y = centerY + sqrt(r² - (w/2)²)` 确保底部不被截断
+  - 点击背景遮罩或订阅后自动关闭弹窗
+
+### CircularScreenClipper
+**File:** `lib/widgets/circular_screen_clipper.dart`
+- 通用圆形裁剪 `CustomClipper<Path>`，用于将任意 Widget 裁剪到屏幕圆形可见区域
+- 以 `min(width, height) / 2` 为半径，屏幕中心为圆心
+- 常用于 `ClipPath` + `PageRouteBuilder(opaque: false)` 组合，确保 overlay 内容不超出圆形边界
+
 ### WatchSafeArea
 - Circular clip using `ClipPath` with circle equation.
 - Only wraps center content zone — top bar goes outside it.
