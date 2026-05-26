@@ -31,6 +31,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const Color _kAccent = Color(0xFF6C63FF);
+
   List<PodcastSubscription> _subscriptions = [];
   int _currentPage = 0;
   bool _loading = true;
@@ -38,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _activeTag;
   bool _isTagDragging = false;
   int _tagDragIndex = 0;
+  double _screenHeight = 0;
 
   @override
   void initState() {
@@ -146,8 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> get _currentPodcastTags => _currentPodcast.tags;
 
   void _updateTagDragFromY(double y) {
-    final height = MediaQuery.of(context).size.height;
-    final ratio = (y / height).clamp(0.0, 1.0);
+    final ratio = (y / _screenHeight).clamp(0.0, 1.0);
     final index = (ratio * (_allTagItems.length - 1)).round().clamp(0, _allTagItems.length - 1);
     if (index != _tagDragIndex) {
       setState(() => _tagDragIndex = index);
@@ -167,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final ws = WearScale.of(context);
+    _screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -249,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: i == _currentPage
-                ? const Color(0xFF6C63FF)
+                ? _kAccent
                 : Colors.grey[600],
           ),
         );
@@ -278,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 静态模式：当前播客的标签
+  /// 静态模式：当前播客的标签（气泡竖向排列，内部文字横向）
   Widget _buildStaticTags(WearScale ws) {
     final tags = _currentPodcastTags;
     if (tags.isEmpty) {
@@ -287,37 +290,49 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: tags.map((tag) => Padding(
-        padding: EdgeInsets.symmetric(vertical: ws.s(2)),
-        child: Text(
-          tag,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: ws.sp(10),
-            fontWeight: FontWeight.w500,
+      children: tags.map((tag) => Container(
+        width: 40,
+        padding: EdgeInsets.symmetric(horizontal: ws.s(4), vertical: ws.s(4)),
+        margin: EdgeInsets.symmetric(vertical: ws.s(4)),
+        decoration: _tagDecoration(ws),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            tag,
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: ws.sp(12),
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
       )).toList(),
     );
   }
 
-  /// 拖拽模式：所有可用标签，高亮当前选中
+  /// 拖拽模式：所有可用标签，高亮当前选中（横向）
   Widget _buildDraggingTags(WearScale ws) {
     final items = _allTagItems;
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Wrap(
+      direction: Axis.horizontal,
+      alignment: WrapAlignment.center,
+      runAlignment: WrapAlignment.center,
+      spacing: ws.s(3),
       children: List.generate(items.length, (i) {
         final isSelected = i == _tagDragIndex;
-        return Padding(
-          padding: EdgeInsets.symmetric(vertical: ws.s(2)),
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: ws.s(5), vertical: ws.s(2)),
+          decoration: isSelected
+              ? _tagDecoration(ws, opacity: 0.4, borderRadius: 8, borderOpacity: 0.5)
+              : null,
           child: Text(
             items[i],
             style: TextStyle(
               color: isSelected
                   ? Colors.white
                   : Colors.white.withValues(alpha: 0.3),
-              fontSize: ws.sp(isSelected ? 11 : 9),
+              fontSize: ws.sp(isSelected ? 10 : 8),
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
             textAlign: TextAlign.center,
@@ -334,13 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         height: ws.s(28),
         padding: EdgeInsets.symmetric(horizontal: ws.s(10)),
-        decoration: BoxDecoration(
-          color: const Color(0xFF6C63FF).withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(ws.s(14)),
-          border: Border.all(
-            color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
-          ),
-        ),
+        decoration: _tagDecoration(ws, opacity: 0.5, borderRadius: 14),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -349,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: ws.s(6),
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFF6C63FF),
+                color: _kAccent,
               ),
             ),
             SizedBox(width: ws.s(3)),
@@ -397,6 +406,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildPodcastTile(PodcastSubscription sub, WearScale ws) {
+    return PodcastTile(
+      title: sub.title,
+      author: sub.author,
+      imageUrl: sub.imageUrl,
+      tags: sub.tags,
+      coverSize: ws.capped(96, maxScale: 1.2),
+      onTap: () => _openEpisodes(sub),
+    );
+  }
+
+  BoxDecoration _tagDecoration(WearScale ws,
+      {double opacity = 0.25, double borderRadius = 10, double borderOpacity = 0.3}) {
+    return BoxDecoration(
+      color: _kAccent.withValues(alpha: opacity),
+      borderRadius: BorderRadius.circular(ws.s(borderRadius)),
+      border: Border.all(
+        color: _kAccent.withValues(alpha: borderOpacity),
+        width: 0.5,
+      ),
+    );
+  }
+
   /// 封面区（居中盖茨比大封面）
   Widget _buildPodcastSection(WearScale ws) {
     final filtered = _filteredSubscriptions;
@@ -414,14 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (count <= 1) {
       return Center(
-        child: PodcastTile(
-          title: filtered[0].title,
-          author: filtered[0].author,
-          imageUrl: filtered[0].imageUrl,
-          tags: filtered[0].tags,
-          coverSize: ws.capped(96, maxScale: 1.2),
-          onTap: () => _openEpisodes(filtered[0]),
-        ),
+        child: _buildPodcastTile(filtered[0], ws),
       );
     }
 
@@ -434,14 +459,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            PodcastTile(
-              title: sub.title,
-              author: sub.author,
-              imageUrl: sub.imageUrl,
-              tags: sub.tags,
-              coverSize: ws.capped(96, maxScale: 1.2),
-              onTap: () => _openEpisodes(sub),
-            ),
+            _buildPodcastTile(sub, ws),
           ],
         );
       },
