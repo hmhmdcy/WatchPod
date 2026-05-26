@@ -106,7 +106,7 @@ Container(
 ### WatchSafeArea
 - Adaptive `Padding` based on circular geometry: `safePadding + radius * 0.06`
 - **Does NOT clip** — circular screen clip handled globally by `MaterialApp.builder`.
-- Used in: HomeScreen (central podcast section), WatchLayout (scrollable content)
+- Used in: HomeScreen (central podcast section) — wraps scrollable content inside WatchSafeArea for circular-safe padding
 - Only wraps center content zone — top bar goes outside it.
 
 ### TagPickerPage

@@ -34,12 +34,12 @@
 | 11 sp | ~9.1 sp | Caption / meta text |
 | 96 dp (cover) | ~80 dp (capped+clamped) | HomeScreen podcast cover |
 
-## File Structure (19 files, ~3600 LOC)
+## File Structure (22 files, ~4300 LOC)
 
 ```
 lib/
 ├── main.dart                  # Entry: init 3 services, run WatchPodApp
-│                              # Web: _WebDebugShell with ClipRRect + MediaQuery override
+│                              # Debug: _DebugPages with IndexedStack (Home/Episodes/Player/Settings/TagPicker)
 ├── models/
 │   ├── episode.dart
 │   └── podcast_subscription.dart
@@ -62,7 +62,6 @@ lib/
     ├── podcast_tile.dart
     ├── home_tag_track.dart    # CustomPaint arc + OverflowBox full-screen + GestureDetector
     ├── watch_safe_area.dart
-    ├── watch_layout.dart
     └── wear_scale.dart        # Base=280. ws.s/sp/fs/capped methods.
 ```
 
@@ -137,25 +136,38 @@ return Scaffold(
 - **Gesture layer (v1.8.2 fix):** A `GestureDetector` with `SizedBox.expand()` is placed between the arc CustomPaint and the label overlay. Handlers: `onVerticalDragStart` → enables drag mode, `onVerticalDragUpdate` → maps Y to tag label, `onVerticalDragEnd` → commits selection, `onTapUp` → single-tap commit. The GestureDetector is at the third child position in the inner Stack (after arc OverFlowBox and before label overlay), ensuring it catches all gestures before they reach the label layer.
 - **标签气泡 (v1.8.4):** 浮层也放在 `OverflowBox` + `Stack` 中使用全屏坐标系。气泡用 `Positioned(top: _dragY - 12, right: screenSize.width - _dragArcX + 29)` 定位，其中 `_dragArcX = cx + R*cos(θ)` 在 `_updateFromY()` 中同步计算。气泡右边缘距弧线左侧 24px 间隙，沿弧线运动（X 和 Y 同步变化）。轻量化样式：字号 10sp, alpha 0.5, w500。
 
-### Web Debug — MediaQuery Override
+### Global Circular Clip — MaterialApp.builder (v1.9.4+)
 
-In `_WebDebugShell.build`:
+The circular screen clipping is handled globally by `_circularScreenBuilder` in `MaterialApp.builder`:
+
 ```dart
-ClipRRect(
-  borderRadius: BorderRadius.circular(watchSize/2),
-  child: MediaQuery(
-    data: MediaQuery.of(context).copyWith(
-      size: Size(watchSize, watchSize),  // ← override!
-    ),
-    child: SizedBox(
-      width: watchSize,
-      height: watchSize,
-      child: IndexedStack(...),  // HomeScreen + other pages
-    ),
-  ),
-)
+// In WatchPodApp.build:
+// Comment: "全局 builder：统一所有路由的圆形裁剪 + 固定尺寸"
+builder: _circularScreenBuilder,
+// ...
+Widget _circularScreenBuilder(BuildContext context, Widget? child) {
+  if (kIsWeb || Platform.isLinux) {
+    const watchSize = 466.0;
+    return Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(watchSize / 2),
+        child: MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            size: const Size(watchSize, watchSize),  // ← override!
+          ),
+          child: SizedBox(
+            width: watchSize, height: watchSize,
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+  return child!;
+}
 ```
-This ensures `MediaQuery.of(context).size` in TagTrack returns the circular mask size (e.g. 577×577), NOT the full browser window (1280×720).
+
+This applies to **all routes** (including Navigator.push pages), not just the debug shell. On Android production builds, `kIsWeb || Platform.isLinux` is false, so no clip is applied (watch bezel handles it). On Web/Linux debug, 466×466 circular mask + MediaQuery override ensures TagTrack arc coordinates are correct.
 
 ### All Other Screens — TopActionBar (v1.8.5+)
 
