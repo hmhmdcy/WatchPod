@@ -28,7 +28,6 @@ class PodcastTile extends StatelessWidget {
     final displayCover = ws.capped(coverSize, maxScale: 1.2);
 
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: ws.s(4), horizontal: ws.s(4)),

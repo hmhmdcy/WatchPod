@@ -158,52 +158,61 @@ class _TagTrackState extends State<TagTrack> {
         clipBehavior: Clip.none,  // 允许浮层溢出到左侧
         children: [
           // 弧线绘制：用 OverflowBox 溢出到全屏
+          // IgnorePointer 防止全屏 OverflowBox 阻挡中央内容点击
           Positioned.fill(
-            child: OverflowBox(
-              minWidth: screenSize.width,
-              maxWidth: screenSize.width,
-              minHeight: screenSize.height,
-              maxHeight: screenSize.height,
-              alignment: Alignment.topLeft,
-              child: CustomPaint(
-                size: screenSize,
-                painter: _TagTrackArcPainter(
-                  startAngleRad: _startAngleRad,
-                  endAngleRad: _endAngleRad,
-                  arcTop: _arcTop,
-                  arcBottom: _arcBottom,
-                  arcRadius: _arcRadius,
-                  arcCenterX: _circleCenter.dx,
-                  arcCenterY: _circleCenter.dy,
-                  strokeWidth: 10,
-                  strokeColor: const Color(0xB0FFFFFF),
-                  isDragging: _isDragging,
-                  dragY: _isDragging ? _dragY : null,
-                  showAddHint: _showAddHint,
-                  ws: ws,
+            child: IgnorePointer(
+              child: OverflowBox(
+                minWidth: screenSize.width,
+                maxWidth: screenSize.width,
+                minHeight: screenSize.height,
+                maxHeight: screenSize.height,
+                alignment: Alignment.topLeft,
+                child: CustomPaint(
+                  size: screenSize,
+                  painter: _TagTrackArcPainter(
+                    startAngleRad: _startAngleRad,
+                    endAngleRad: _endAngleRad,
+                    arcTop: _arcTop,
+                    arcBottom: _arcBottom,
+                    arcRadius: _arcRadius,
+                    arcCenterX: _circleCenter.dx,
+                    arcCenterY: _circleCenter.dy,
+                    strokeWidth: 10,
+                    strokeColor: const Color(0xB0FFFFFF),
+                    isDragging: _isDragging,
+                    dragY: _isDragging ? _dragY : null,
+                    showAddHint: _showAddHint,
+                    ws: ws,
+                  ),
                 ),
               ),
             ),
           ),
-          // 手势检测：拖拽弧线标签切换 + 点击提交
-          // 使用 translucent 确保 40dp 窄条也能响应触摸
-          // behavior: HitTestBehavior.translucent 让空白区域也能接收事件
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onVerticalDragStart: (details) {
-                setState(() => _isDragging = true);
-                _updateFromY(details.localPosition.dy, screenSize.height);
-              },
-              onVerticalDragUpdate: (details) {
-                _updateFromY(details.localPosition.dy, screenSize.height);
-              },
-              onVerticalDragEnd: (_) => _commitLabel(),
-              onTapUp: (details) {
-                _updateFromY(details.localPosition.dy, screenSize.height);
-                _commitLabel();
-              },
-              child: const SizedBox.expand(),
+          // 手势检测：限定在右侧 40dp 区域，不干扰中央内容点击
+          // ⚠️ 必须用 Positioned(right:0) + SizedBox(width:40) 而非 Positioned.fill
+          //    Positioned.fill 会覆盖 SizedBox(width:40) 导致手势区域全屏
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: SizedBox(
+              width: 40,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onVerticalDragStart: (details) {
+                  setState(() => _isDragging = true);
+                  _updateFromY(details.localPosition.dy, screenSize.height);
+                },
+                onVerticalDragUpdate: (details) {
+                  _updateFromY(details.localPosition.dy, screenSize.height);
+                },
+                onVerticalDragEnd: (_) => _commitLabel(),
+                onTapUp: (details) {
+                  _updateFromY(details.localPosition.dy, screenSize.height);
+                  _commitLabel();
+                },
+                child: const SizedBox.expand(),
+              ),
             ),
           ),
           // 标签浮层 — 拖拽时渲染
