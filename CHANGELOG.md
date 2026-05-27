@@ -1,5 +1,21 @@
 # WatchPod Changelog
 
+## v1.9.9 — 2026-05-27
+
+### Changed
+- **主页 UI 打磨** (`lib/screens/home_screen.dart`):
+  - 顶部"正在播放"按钮上边距从 `ws.s(6)` 改为 `ws.s(10)`，与底部按钮对称（~17px）
+  - 统一上下按钮样式：高度 `ws.s(28)`、水平内边距 `ws.s(12)`、字号 `ws.sp(10)`、圆角 14
+  - 添加订阅按钮改用 `_tagDecoration`，支持自定义颜色参数（白色半透明调）
+  - 右侧标签列触摸区域从 `double.infinity`（全屏高）改为 `ws.s(200)`（滑动条区域，垂直居中）
+  - 拖拽位置映射从 `_screenHeight` 改为滑块高度 `200`，灵敏度提升
+  - `_updateTagDragFromY()` 接收 `sliderHeight` 参数替代硬编码全屏高
+- **Linux Desktop 调试修复** (`lib/services/audio_service.dart`):
+  - `try-catch` 包裹 `AudioPlayer()` 初始化，避免 Linux Desktop 因 `MissingPluginException`(just_audio) 崩溃
+  - Linux Desktop 自动注入 mock Episode，使"正在播放"按钮可渲染
+- **PodcastTile 去除重复标签** (`lib/widgets/podcast_tile.dart`):
+  - 移除卡片内的 `Chip` 标签组件——标签仅保留在右侧标签列显示
+
 ## v1.9.8 — 2026-05-26
 
 ### Changed

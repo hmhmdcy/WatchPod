@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
+import '../models/episode.dart';
 import '../models/podcast_subscription.dart';
 import '../widgets/podcast_tile.dart';
 import '../widgets/glass_components.dart';
@@ -79,6 +80,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ];
       setState(() => _loading = false);
+      // 注入 mock 播放状态以便调试"正在播放"按钮
+      if (widget.audioService.currentEpisode == null) {
+        widget.audioService.play(Episode(
+          id: 'mock-playing',
+          podcastId: 'mock-1',
+          title: '第1期：AI 如何改变世界',
+          audioUrl: 'https://example.com/mock.mp3',
+          imageUrl: 'https://picsum.photos/seed/pod1/200/200',
+          duration: const Duration(minutes: 45),
+        ));
+      }
       return;
     }
     final subs = await widget.storageService.loadSubscriptions();
@@ -148,8 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<String> get _currentPodcastTags => _currentPodcast.tags;
 
-  void _updateTagDragFromY(double y) {
-    final ratio = (y / _screenHeight).clamp(0.0, 1.0);
+  void _updateTagDragFromY(double y, double sliderHeight) {
+    final ratio = (y / sliderHeight).clamp(0.0, 1.0);
     final index = (ratio * (_allTagItems.length - 1)).round().clamp(0, _allTagItems.length - 1);
     if (index != _tagDragIndex) {
       setState(() => _tagDragIndex = index);
@@ -208,15 +220,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 right: 52,
                 top: 0,
                 bottom: 0,
-                child: SizedBox(
-                  width: 40,
-                  child: _buildTagColumn(ws),
+                child: Center(
+                  child: SizedBox(
+                    width: 40,
+                    child: _buildTagColumn(ws),
+                  ),
                 ),
               ),
             // 顶部「正在播放」按钮
             if (!_loading && widget.audioService.currentEpisode != null)
               Positioned(
-                top: ws.s(6),
+                top: ws.s(10),
                 left: 0,
                 right: 0,
                 child: Center(
@@ -264,17 +278,20 @@ class _HomeScreenState extends State<HomeScreen> {
   ///   静态：显示当前播客的标签属性
   ///   拖拽：切换为标签筛选模式
   Widget _buildTagColumn(WearScale ws) {
+    const sliderHeight = 200.0; // dp，滑动条区域高度
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onVerticalDragStart: (details) {
         setState(() => _isTagDragging = true);
-        _updateTagDragFromY(details.localPosition.dy);
+        _updateTagDragFromY(details.localPosition.dy, sliderHeight);
       },
       onVerticalDragUpdate: (details) {
-        _updateTagDragFromY(details.localPosition.dy);
+        _updateTagDragFromY(details.localPosition.dy, sliderHeight);
       },
       onVerticalDragEnd: (_) => _commitTagDrag(),
       child: Container(
+        width: double.infinity,
+        height: ws.s(sliderHeight),
         alignment: Alignment.center,
         child: _isTagDragging ? _buildDraggingTags(ws) : _buildStaticTags(ws),
       ),
@@ -348,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: _openPlayer,
       child: Container(
         height: ws.s(28),
-        padding: EdgeInsets.symmetric(horizontal: ws.s(10)),
+        padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
         decoration: _tagDecoration(ws, opacity: 0.5, borderRadius: 14),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -380,16 +397,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: _openSettings,
       child: Container(
-        height: ws.s(32),
-        padding: EdgeInsets.symmetric(horizontal: ws.s(16)),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(ws.s(16)),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.15),
-            width: 0.5,
-          ),
-        ),
+        height: ws.s(28),
+        padding: EdgeInsets.symmetric(horizontal: ws.s(12)),
+        decoration: _tagDecoration(ws,
+            opacity: 0.12,
+            borderRadius: 14,
+            color: Colors.white,
+            borderOpacity: 0.2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -397,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(width: ws.s(3)),
             Text('添加订阅',
                 style: TextStyle(
-                    fontSize: ws.sp(11),
+                    fontSize: ws.sp(10),
                     color: Colors.white,
                     fontWeight: FontWeight.bold)),
           ],
@@ -418,12 +432,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   BoxDecoration _tagDecoration(WearScale ws,
-      {double opacity = 0.25, double borderRadius = 10, double borderOpacity = 0.3}) {
+      {double opacity = 0.25, double borderRadius = 10, double borderOpacity = 0.3, Color? color}) {
+    final c = color ?? _kAccent;
     return BoxDecoration(
-      color: _kAccent.withValues(alpha: opacity),
+      color: c.withValues(alpha: opacity),
       borderRadius: BorderRadius.circular(ws.s(borderRadius)),
       border: Border.all(
-        color: _kAccent.withValues(alpha: borderOpacity),
+        color: c.withValues(alpha: borderOpacity),
         width: 0.5,
       ),
     );

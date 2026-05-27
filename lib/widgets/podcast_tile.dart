@@ -70,31 +70,6 @@ class PodcastTile extends StatelessWidget {
                 style: TextStyle(fontSize: ws.sp(10), color: Colors.grey[400]),
               ),
             ],
-            // 标签
-            if (tags.isNotEmpty) ...[
-              SizedBox(height: ws.s(3)),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: tags.take(3).map((tag) {
-                  return Container(
-                    margin: EdgeInsets.symmetric(horizontal: ws.s(2)),
-                    padding: EdgeInsets.symmetric(horizontal: ws.s(6), vertical: 1),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6C63FF).withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(ws.s(8)),
-                      border: Border.all(
-                        color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
-                        width: 0.5,
-                      ),
-                    ),
-                    child: Text(
-                      tag,
-                      style: TextStyle(fontSize: ws.sp(9), color: Colors.white70),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
           ],
         ),
       ),
